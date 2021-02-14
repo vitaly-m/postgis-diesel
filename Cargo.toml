@@ -1,0 +1,14 @@
+[package]
+name = "postgis-diesel"
+version = "0.1.0"
+authors = ["Vitaly Merenkov <vmrnkv@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+diesel = { version = "1.4", features = ["postgres"] }
+postgis = "0.8"
+
+[dev-dependencies]
+dotenv = "0.15.0"
