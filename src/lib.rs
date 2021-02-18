@@ -8,7 +8,7 @@ use diesel::backend::Backend;
 use diesel::deserialize::{self, FromSql};
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
-use postgis::ewkb::{AsEwkbLineString, AsEwkbPoint, EwkbRead, EwkbWrite};
+use postgis::ewkb::{AsEwkbLineString, AsEwkbPoint, AsEwkbPolygon, EwkbRead, EwkbWrite};
 use postgis::*;
 
 use sql_types::*;
@@ -24,6 +24,36 @@ pub struct PointC<T> {
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[sql_type = "Geometry"]
 pub struct LineStringC<T> {
+    pub v: T,
+}
+
+#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
+#[sql_type = "Geometry"]
+pub struct PolygonC<T> {
+    pub v: T,
+}
+
+#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
+#[sql_type = "Geometry"]
+pub struct MultiPointC<T> {
+    pub v: T,
+}
+
+#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
+#[sql_type = "Geometry"]
+pub struct MultiLineStringC<T> {
+    pub v: T,
+}
+
+#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
+#[sql_type = "Geometry"]
+pub struct MultiPolygonC<T> {
+    pub v: T,
+}
+
+#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
+#[sql_type = "Geometry"]
+pub struct GeometryCollectionC<T> {
     pub v: T,
 }
 
@@ -64,16 +94,34 @@ where
     impl_to_sql!();
 }
 
-impl<P> FromSql<Geometry, Pg> for LineStringC<ewkb::LineStringT<P>>
-where
-    P: postgis::Point + EwkbRead + Debug,
-{
-    impl_from_sql!(LineString, "LineString", LineStringC);
+macro_rules! impl_from_sql_trait {
+    ($p:ident, $pb:ident, $ps:literal, $s:ident) => {
+        impl<P> FromSql<Geometry, Pg> for $s<ewkb::$pb<P>>
+        where
+            P: postgis::Point + EwkbRead + Debug,
+        {
+            impl_from_sql!($p, $ps, $s);
+        }
+    };
 }
 
-impl<P> ToSql<Geometry, Pg> for LineStringC<ewkb::LineStringT<P>>
-where
-    P: postgis::Point + for<'a> AsEwkbPoint<'a> + EwkbRead + Debug,
-{
-    impl_to_sql!();
+macro_rules! impl_to_sql_trait {
+    ($pb:ident, $s:ident) => {
+        impl<P> ToSql<Geometry, Pg> for $s<ewkb::$pb<P>>
+        where
+            P: postgis::Point + for<'a> AsEwkbPoint<'a> + EwkbRead + Debug,
+        {
+            impl_to_sql!();
+        }
+    };
 }
+
+impl_to_sql_trait!(PolygonT, PolygonC);
+impl_to_sql_trait!(LineStringT, LineStringC);
+
+impl_from_sql_trait!(LineString, LineStringT, "LineString", LineStringC);
+impl_from_sql_trait!(Polygon, PolygonT, "Polygon", PolygonC);
+impl_from_sql_trait!(MultiPoint, MultiPointT, "MultiPoint", MultiPointC);
+impl_from_sql_trait!(MultiLineString, MultiLineStringT, "MultiLineString", MultiLineStringC);
+impl_from_sql_trait!(MultiPolygon, MultiPolygonT, "MultiPolygon", MultiPolygonC);
+impl_from_sql_trait!(GeometryCollection, GeometryCollectionT, "GeometryCollection", GeometryCollectionC);
