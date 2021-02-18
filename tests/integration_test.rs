@@ -6,21 +6,22 @@ use std::env;
 use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::{Connection, ExpressionMethods, PgConnection, RunQueryDsl};
 use dotenv::dotenv;
+use postgis::ewkb::{LineStringT, Point};
 
 use postgis_diesel::*;
 
 #[derive(Insertable)]
 #[table_name = "geometry_samples"]
 struct NewGeometrySample {
-    point: postgis_diesel::GeometryHolder,
-    linestring: postgis_diesel::GeometryHolder,
+    point: PointC<Point>,
+    linestring: LineStringC<LineStringT<Point>>,
 }
 
 #[derive(Queryable)]
 struct GeometrySample {
     id: i32,
-    point: postgis_diesel::GeometryHolder,
-    linestring: postgis_diesel::GeometryHolder,
+    point: PointC<Point>,
+    linestring: LineStringC<LineStringT<Point>>,
 }
 
 table! {
@@ -43,7 +44,8 @@ fn establish_connection() -> PgConnection {
 #[test]
 fn geometry_test() {
     let conn = establish_connection();
-    let _ = diesel::sql_query("CREATE EXTENSION postgis").execute(&conn);
+    let _ = diesel::sql_query("CREATE EXTENSION IF NOT EXISTS postgis").execute(&conn);
+    let _ = diesel::sql_query("DROP TABLE geometry_samples").execute(&conn);
     let _ = diesel::sql_query(
         "CREATE TABLE geometry_samples
 (
@@ -53,27 +55,15 @@ fn geometry_test() {
 )",
     )
     .execute(&conn);
+    let mut ls = LineStringT::new();
+    ls.points.push(Point::new(72.0, 64.0, Option::Some(4326)));
+    ls.points.push(Point::new(73.0, 64.0, Option::Some(4326)));
+    ls.srid = Option::Some(4326);
     let new_track = NewGeometrySample {
-        point: GeometryHolder::Point(Point {
-            x: 75.0,
-            y: 34.0,
-            srid: Option::Some(4326),
-        }),
-        linestring: GeometryHolder::LineString(LineString {
-            points: vec![
-                Point {
-                    x: 75.0,
-                    y: 34.0,
-                    srid: Option::Some(4326),
-                },
-                Point {
-                    x: 76.0,
-                    y: 35.0,
-                    srid: Option::Some(4326),
-                },
-            ],
-            srid: Option::Some(4326),
-        }),
+        point: PointC {
+            v: Point::new(72.0, 64.0, Option::Some(4326)),
+        },
+        linestring: LineStringC { v: ls },
     };
     let point_from_db: GeometrySample = diesel::insert_into(geometry_samples::table)
         .values(&new_track)
