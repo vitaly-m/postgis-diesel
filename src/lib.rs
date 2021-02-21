@@ -15,42 +15,119 @@ use sql_types::*;
 
 pub mod sql_types;
 
+/// Container for a `postgis::ewkb::Point`, use that structure in `Insertable` or `Queryable` struct.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::PointC;
+/// use postgis::ewkb::Point;
+/// #[derive(Queryable)]
+/// struct PointExample {
+///     id: i32,
+///     point: PointC<Point>,
+/// }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[sql_type = "Geometry"]
 pub struct PointC<T> {
     pub v: T,
 }
 
+/// Container for a `postgis::ewkb::LineStringT`, use that structure in `Insertable` or `Queryable` struct.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::LineStringC;
+/// use postgis::ewkb::{Point, LineStringT};
+/// #[derive(Queryable)]
+/// struct PointExample {
+///     id: i32,
+///     point: LineStringC<LineStringT<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[sql_type = "Geometry"]
 pub struct LineStringC<T> {
     pub v: T,
 }
 
+/// Container for a `postgis::ewkb::PolygonT`, use that structure in `Insertable` or `Queryable` struct.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::PolygonC;
+/// use postgis::ewkb::{Point, PolygonT};
+/// #[derive(Queryable)]
+/// struct PointExample {
+///     id: i32,
+///     point: PolygonC<PolygonT<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[sql_type = "Geometry"]
 pub struct PolygonC<T> {
     pub v: T,
 }
 
+/// Container for a `postgis::ewkb::MultiPointT`, use that structure in `Insertable` or `Queryable` struct.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::MultiPointC;
+/// use postgis::ewkb::{Point, MultiPointT};
+/// #[derive(Queryable)]
+/// struct PointExample {
+///     id: i32,
+///     point: MultiPointC<MultiPointT<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[sql_type = "Geometry"]
 pub struct MultiPointC<T> {
     pub v: T,
 }
 
+/// Container for a `postgis::ewkb::MultiLineStringT`, use that structure in `Insertable` or `Queryable` struct.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::MultiLineStringC;
+/// use postgis::ewkb::{Point, MultiLineStringT};
+/// #[derive(Queryable)]
+/// struct PointExample {
+///     id: i32,
+///     point: MultiLineStringC<MultiLineStringT<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[sql_type = "Geometry"]
 pub struct MultiLineStringC<T> {
     pub v: T,
 }
 
+/// Container for a `postgis::ewkb::MultiPolygonT`, use that structure in `Insertable` or `Queryable` struct.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::MultiPolygonC;
+/// use postgis::ewkb::{Point, MultiPolygonT};
+/// #[derive(Queryable)]
+/// struct PointExample {
+///     id: i32,
+///     point: MultiPolygonC<MultiPolygonT<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[sql_type = "Geometry"]
 pub struct MultiPolygonC<T> {
     pub v: T,
 }
 
+/// Container for a `postgis::ewkb::GeometryCollectionT`, use that structure in `Insertable` or `Queryable` struct.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::GeometryCollectionC;
+/// use postgis::ewkb::{Point, GeometryCollectionT};
+/// #[derive(Queryable)]
+/// struct PointExample {
+///     id: i32,
+///     point: GeometryCollectionC<GeometryCollectionT<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[sql_type = "Geometry"]
 pub struct GeometryCollectionC<T> {
@@ -122,6 +199,16 @@ impl_to_sql_trait!(LineStringT, LineStringC);
 impl_from_sql_trait!(LineString, LineStringT, "LineString", LineStringC);
 impl_from_sql_trait!(Polygon, PolygonT, "Polygon", PolygonC);
 impl_from_sql_trait!(MultiPoint, MultiPointT, "MultiPoint", MultiPointC);
-impl_from_sql_trait!(MultiLineString, MultiLineStringT, "MultiLineString", MultiLineStringC);
+impl_from_sql_trait!(
+    MultiLineString,
+    MultiLineStringT,
+    "MultiLineString",
+    MultiLineStringC
+);
 impl_from_sql_trait!(MultiPolygon, MultiPolygonT, "MultiPolygon", MultiPolygonC);
-impl_from_sql_trait!(GeometryCollection, GeometryCollectionT, "GeometryCollection", GeometryCollectionC);
+impl_from_sql_trait!(
+    GeometryCollection,
+    GeometryCollectionT,
+    "GeometryCollection",
+    GeometryCollectionC
+);

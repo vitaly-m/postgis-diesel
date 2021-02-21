@@ -1,8 +1,14 @@
 [package]
-name = "postgis-diesel"
+name = "postgis_diesel"
 version = "0.1.0"
 authors = ["Vitaly Merenkov <vmrnkv@gmail.com>"]
 edition = "2018"
+description = "An extension for Diesel framework to support PostGIS geometry datatype."
+homepage = "https://github.com/vitaly-m/postgis-diesel"
+repository = "https://github.com/vitaly-m/postgis-diesel"
+readme = "README.md"
+keywords = ["PostGIS", "GIS", "GEO", "Diesel"]
+license-file = "LICENSE"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
