@@ -1,6 +1,6 @@
 [package]
 name = "postgis_diesel"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Vitaly Merenkov <vmrnkv@gmail.com>"]
 edition = "2018"
 description = "An extension for Diesel framework to support PostGIS geometry datatype."
@@ -14,7 +14,7 @@ license-file = "LICENSE"
 
 [dependencies]
 diesel = { version = "1.4", features = ["postgres"] }
-postgis = "0.8"
+postgis = "0.9.0"
 
 [dev-dependencies]
 dotenv = "0.15.0"

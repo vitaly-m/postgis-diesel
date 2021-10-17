@@ -8,7 +8,9 @@ use diesel::backend::Backend;
 use diesel::deserialize::{self, FromSql};
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
-use postgis::ewkb::{AsEwkbLineString, AsEwkbPoint, AsEwkbPolygon, EwkbRead, EwkbWrite,AsEwkbMultiPolygon};
+use postgis::ewkb::{
+    AsEwkbLineString, AsEwkbMultiPolygon, AsEwkbPoint, AsEwkbPolygon, EwkbRead, EwkbWrite,
+};
 use postgis::*;
 
 use sql_types::*;
