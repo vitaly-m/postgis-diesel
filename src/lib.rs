@@ -9,7 +9,8 @@ use diesel::deserialize::{self, FromSql};
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use postgis::ewkb::{
-    AsEwkbLineString, AsEwkbMultiPolygon, AsEwkbPoint, AsEwkbPolygon, EwkbRead, EwkbWrite,
+    AsEwkbGeometryCollection, AsEwkbLineString, AsEwkbMultiPolygon, AsEwkbPoint, AsEwkbPolygon,
+    EwkbRead, EwkbWrite,
 };
 use postgis::*;
 
@@ -198,6 +199,7 @@ macro_rules! impl_to_sql_trait {
 impl_to_sql_trait!(PolygonT, PolygonC);
 impl_to_sql_trait!(LineStringT, LineStringC);
 impl_to_sql_trait!(MultiPolygonT, MultiPolygonC);
+impl_to_sql_trait!(GeometryCollectionT, GeometryCollectionC);
 
 impl_from_sql_trait!(LineString, LineStringT, "LineString", LineStringC);
 impl_from_sql_trait!(Polygon, PolygonT, "Polygon", PolygonC);
