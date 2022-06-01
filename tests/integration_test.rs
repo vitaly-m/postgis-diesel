@@ -3,10 +3,10 @@ extern crate diesel;
 
 use std::env;
 
-use diesel::query_dsl::filter_dsl::FilterDsl;
-use diesel::{Connection, ExpressionMethods, PgConnection, RunQueryDsl};
+// use diesel::query_dsl::filter_dsl::FilterDsl;
+use diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl};
 use dotenv::dotenv;
-use postgis::ewkb::{LineStringT, Point};
+use postgis::ewkb::{LineStringT, Point, PolygonT};
 
 use postgis_diesel::*;
 
@@ -73,6 +73,30 @@ fn geometry_test() {
     assert_eq!(sample.point, point_from_db.point);
     assert_eq!(sample.linestring, point_from_db.linestring);
 
+    let pol = PolygonC {
+        v: PolygonT {
+            rings: vec![
+                LineStringT {
+                    points: vec![
+                        Point::new(71.0, 63.0, Option::Some(4326)),
+                        Point::new(71.0, 65.0, Option::Some(4326)),
+                        Point::new(73.0, 65.0, Option::Some(4326)),
+                        Point::new(73.0, 63.0, Option::Some(4326)),
+                        Point::new(71.0, 63.0, Option::Some(4326)),
+                    ],
+                    srid: Option::Some(4326),
+                },
+            ],
+            srid: Option::Some(4326),
+        },
+    };
+    let r:GeometrySample = geometry_samples::table
+        .filter(contained_by(geometry_samples::point, pol))
+        .get_result::<GeometrySample>(&conn)
+        .expect("Error getting geometry sample");
+
+    assert_eq!(sample.point, r.point);
+    assert_eq!(sample.linestring, r.linestring);
     let _ =
         diesel::delete(geometry_samples::table.filter(geometry_samples::id.eq(point_from_db.id)))
             .execute(&conn);

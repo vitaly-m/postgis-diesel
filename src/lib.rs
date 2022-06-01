@@ -217,3 +217,15 @@ impl_from_sql_trait!(
     "GeometryCollection",
     GeometryCollectionC
 );
+
+diesel_infix_operator!(BBContainedBy, " @ ");
+
+use diesel::expression::AsExpression;
+use diesel::Expression;
+
+pub fn contained_by<T, U>(left: T, right: U) -> BBContainedBy<T, U::Expression> where
+    T: Expression,
+    U: AsExpression<T::SqlType>,
+{
+    BBContainedBy::new(left, right.as_expression())
+}
