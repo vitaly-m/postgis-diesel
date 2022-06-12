@@ -5,7 +5,7 @@ use std::env;
 use std::sync::Once;
 
 // use diesel::query_dsl::filter_dsl::FilterDsl;
-use diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl, RunQueryDsl, QueryResult};
+use diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl, QueryResult, RunQueryDsl};
 use dotenv::dotenv;
 use postgis::ewkb::{LineStringT, Point};
 
@@ -73,7 +73,7 @@ fn new_line(points: Vec<(f64, f64)>) -> LineStringC<LineStringT<Point>> {
         ls.points.push(Point::new(p.0, p.1, Option::Some(4326)));
     }
     ls.srid = Option::Some(4326);
-    LineStringC {v: ls}
+    LineStringC { v: ls }
 }
 
 fn new_point(x: f64, y: f64) -> PointC<Point> {
