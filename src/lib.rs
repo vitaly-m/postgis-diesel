@@ -16,6 +16,7 @@ use postgis::*;
 
 use sql_types::*;
 
+pub mod operators;
 pub mod sql_types;
 
 /// Container for a `postgis::ewkb::Point`, use that structure in `Insertable` or `Queryable` struct.
