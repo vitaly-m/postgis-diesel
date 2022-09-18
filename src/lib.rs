@@ -142,8 +142,7 @@ macro_rules! impl_from_sql {
     ($p:ident, $ps:literal, $s:ident) => {
         fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
             let mut r = Cursor::new(bytes.as_bytes());
-            let rref = &mut r;
-            let geom = ewkb::GeometryT::read_ewkb(rref)?;
+            let geom = ewkb::GeometryT::read_ewkb(&mut r)?;
             return match geom {
                 postgis::ewkb::GeometryT::$p(v) => Ok($s { v }),
                 _ => Err(format!("Geometry is not a {}", $ps).into()),
