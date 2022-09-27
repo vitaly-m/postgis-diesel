@@ -12,5 +12,5 @@
 ///}
 /// ```
 #[derive(SqlType, QueryId)]
-#[postgres(type_name = "geometry")]
+#[diesel(postgres_type(name = "geometry"))]
 pub struct Geometry;

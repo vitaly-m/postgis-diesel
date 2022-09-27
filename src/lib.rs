@@ -4,8 +4,8 @@ extern crate diesel;
 use std::fmt::{Debug};
 use std::io::Cursor;
 
-use diesel::backend::Backend;
 use diesel::deserialize::{self, FromSql};
+use diesel::pg;
 use diesel::pg::Pg;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use postgis::ewkb::{
@@ -32,7 +32,7 @@ pub mod types;
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct PointC<T> {
     pub v: T,
 }
@@ -49,7 +49,7 @@ pub struct PointC<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct LineStringC<T> {
     pub v: T,
 }
@@ -66,7 +66,7 @@ pub struct LineStringC<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct PolygonC<T> {
     pub v: T,
 }
@@ -83,7 +83,7 @@ pub struct PolygonC<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct MultiPointC<T> {
     pub v: T,
 }
@@ -100,7 +100,7 @@ pub struct MultiPointC<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct MultiLineStringC<T> {
     pub v: T,
 }
@@ -117,7 +117,7 @@ pub struct MultiLineStringC<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct MultiPolygonC<T> {
     pub v: T,
 }
@@ -134,16 +134,15 @@ pub struct MultiPolygonC<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct GeometryCollectionC<T> {
     pub v: T,
 }
 
 macro_rules! impl_from_sql {
     ($p:ident, $ps:literal, $s:ident) => {
-        fn from_sql(bytes: Option<&<Pg as Backend>::RawValue>) -> deserialize::Result<Self> {
-            let bytes = not_none!(bytes);
-            let mut r = Cursor::new(bytes);
+        fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+            let mut r = Cursor::new(bytes.as_bytes());
             let geom = ewkb::GeometryT::read_ewkb(&mut r)?;
             return match geom {
                 postgis::ewkb::GeometryT::$p(v) => Ok($s { v }),
@@ -155,7 +154,7 @@ macro_rules! impl_from_sql {
 
 macro_rules! impl_to_sql {
     () => {
-        fn to_sql<W: std::io::Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+        fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
             self.v.as_ewkb().write_ewkb(out)?;
             Ok(IsNull::No)
         }
