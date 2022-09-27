@@ -2,11 +2,9 @@ use std::io::Cursor;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
-    backend::Backend,
-    deserialize,
-    pg::Pg,
-    serialize::{self, Output},
-    types::{FromSql, IsNull, ToSql},
+    deserialize::{self, FromSql},
+    pg::{self, Pg},
+    serialize::{self, IsNull, Output, ToSql},
 };
 
 use crate::sql_types::*;
@@ -56,7 +54,7 @@ impl From<u32> for GeometryType {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -64,7 +62,7 @@ pub struct Point {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct PointZ {
     pub x: f64,
     pub y: f64,
@@ -73,7 +71,7 @@ pub struct PointZ {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct PointM {
     pub x: f64,
     pub y: f64,
@@ -82,7 +80,7 @@ pub struct PointM {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct PointZM {
     pub x: f64,
     pub y: f64,
@@ -107,7 +105,7 @@ pub trait PointT {
 }
 
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[sql_type = "Geometry"]
+#[diesel(sql_type = Geometry)]
 pub struct LineString<T> {
     pub points: Vec<T>,
     pub srid: Option<u32>,
@@ -230,7 +228,7 @@ fn new_point(x: f64, y: f64, srid: Option<u32>, z: Option<f64>, m: Option<f64>) 
 }
 
 impl FromSql<Geometry, Pg> for Point {
-    fn from_sql(bytes: Option<&<Pg as Backend>::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
         if let PointE::Point(point) = read_point(bytes)? {
             return Ok(point);
         }
@@ -239,7 +237,7 @@ impl FromSql<Geometry, Pg> for Point {
 }
 
 impl FromSql<Geometry, Pg> for PointZ {
-    fn from_sql(bytes: Option<&<Pg as Backend>::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
         if let PointE::PointZ(point) = read_point(bytes)? {
             return Ok(point);
         }
@@ -248,7 +246,7 @@ impl FromSql<Geometry, Pg> for PointZ {
 }
 
 impl FromSql<Geometry, Pg> for PointM {
-    fn from_sql(bytes: Option<&<Pg as Backend>::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
         if let PointE::PointM(point) = read_point(bytes)? {
             return Ok(point);
         }
@@ -257,7 +255,7 @@ impl FromSql<Geometry, Pg> for PointM {
 }
 
 impl FromSql<Geometry, Pg> for PointZM {
-    fn from_sql(bytes: Option<&<Pg as Backend>::RawValue>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
         if let PointE::PointZM(point) = read_point(bytes)? {
             return Ok(point);
         }
@@ -266,33 +264,31 @@ impl FromSql<Geometry, Pg> for PointZM {
 }
 
 impl ToSql<Geometry, Pg> for Point {
-    fn to_sql<W: std::io::Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
         write_point(self, out)
     }
 }
 
 impl ToSql<Geometry, Pg> for PointZ {
-    fn to_sql<W: std::io::Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
         write_point(self, out)
     }
 }
 
 impl ToSql<Geometry, Pg> for PointM {
-    fn to_sql<W: std::io::Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
         write_point(self, out)
     }
 }
 
 impl ToSql<Geometry, Pg> for PointZM {
-    fn to_sql<W: std::io::Write>(&self, out: &mut Output<W, Pg>) -> serialize::Result {
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
         write_point(self, out)
     }
 }
 
-fn read_point(bytes: Option<&<Pg as Backend>::RawValue>) -> deserialize::Result<PointE>
-{
-    let bytes = not_none!(bytes);
-    let mut r = Cursor::new(bytes);
+fn read_point(bytes: pg::PgValue) -> deserialize::Result<PointE> {
+    let mut r = Cursor::new(bytes.as_bytes());
     let end = r.read_u8()?;
     if end == BIG_ENDIAN {
         read_point_e::<BigEndian>(&mut r)
@@ -317,7 +313,14 @@ where
     read_point_with_type_srid::<T>(cursor, g_type, srid)
 }
 
-fn read_point_with_type_srid<T>(cursor: &mut Cursor<&[u8]>, g_type: u32, srid: Option<u32>) -> deserialize::Result<PointE> {
+fn read_point_with_type_srid<T>(
+    cursor: &mut Cursor<&[u8]>,
+    g_type: u32,
+    srid: Option<u32>,
+) -> deserialize::Result<PointE>
+where
+    T: byteorder::ByteOrder,
+{
     let x = cursor.read_f64::<T>()?;
     let y = cursor.read_f64::<T>()?;
     let mut z = None;
@@ -331,10 +334,9 @@ fn read_point_with_type_srid<T>(cursor: &mut Cursor<&[u8]>, g_type: u32, srid: O
     Ok(new_point(x, y, srid, z, m))
 }
 
-fn write_point<W, T>(point: &T, out: &mut Output<W, Pg>) -> serialize::Result
+fn write_point<T>(point: &T, out: &mut Output<Pg>) -> serialize::Result
 where
     T: PointT,
-    W: std::io::Write,
 {
     out.write_u8(LITTLE_ENDIAN)?;
     let mut p_type = GeometryType::Point as u32;
