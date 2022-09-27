@@ -7,9 +7,10 @@ use std::sync::Once;
 // use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl, QueryResult, RunQueryDsl};
 use dotenv::dotenv;
-use postgis::ewkb::{LineStringT, Point};
+use postgis::ewkb::{self, LineStringT};
 
 use postgis_diesel::operators::*;
+use postgis_diesel::types::{Point, PointM, PointZ, PointZM};
 use postgis_diesel::*;
 
 static INIT: Once = Once::new();
@@ -18,16 +19,22 @@ static INIT: Once = Once::new();
 #[table_name = "geometry_samples"]
 struct NewGeometrySample {
     name: String,
-    point: PointC<Point>,
-    linestring: LineStringC<LineStringT<Point>>,
+    point: Point,
+    point_z: PointZ,
+    point_m: PointM,
+    point_zm: PointZM,
+    linestring: LineStringC<LineStringT<ewkb::Point>>,
 }
 
 #[derive(Queryable, Debug, PartialEq)]
 struct GeometrySample {
     id: i32,
     name: String,
-    point: PointC<Point>,
-    linestring: LineStringC<LineStringT<Point>>,
+    point: Point,
+    point_z: PointZ,
+    point_m: PointM,
+    point_zm: PointZM,
+    linestring: LineStringC<LineStringT<ewkb::Point>>,
 }
 
 table! {
@@ -37,6 +44,9 @@ table! {
         id -> Int4,
         name -> Text,
         point -> Geometry,
+        point_z -> Geometry,
+        point_m -> Geometry,
+        point_zm -> Geometry,
         linestring -> Geometry,
     }
 }
@@ -59,6 +69,9 @@ fn initialize() -> PgConnection {
     id         SERIAL PRIMARY KEY,
     name       text,
     point      geometry(Point,4326) NOT NULL,
+    point_z    geometry(PointZ,4326) NOT NULL,
+    point_m    geometry(PointM,4326) NOT NULL,
+    point_zm   geometry(PointZM,4326) NOT NULL,
     linestring geometry(Linestring,4326) NOT NULL
 )",
         )
@@ -67,18 +80,49 @@ fn initialize() -> PgConnection {
     conn
 }
 
-fn new_line(points: Vec<(f64, f64)>) -> LineStringC<LineStringT<Point>> {
+fn new_line(points: Vec<(f64, f64)>) -> LineStringC<LineStringT<ewkb::Point>> {
     let mut ls = LineStringT::new();
     for p in points {
-        ls.points.push(Point::new(p.0, p.1, Option::Some(4326)));
+        ls.points
+            .push(ewkb::Point::new(p.0, p.1, Option::Some(4326)));
     }
     ls.srid = Option::Some(4326);
     LineStringC { v: ls }
 }
 
-fn new_point(x: f64, y: f64) -> PointC<Point> {
-    PointC {
-        v: Point::new(x, y, Option::Some(4326)),
+fn new_point(x: f64, y: f64) -> Point {
+    Point {
+        x,
+        y,
+        srid: Some(4326),
+    }
+}
+
+fn new_point_z(x: f64, y: f64, z: f64) -> PointZ {
+    PointZ {
+        x,
+        y,
+        z,
+        srid: Some(4326),
+    }
+}
+
+fn new_point_m(x: f64, y: f64, m: f64) -> PointM {
+    PointM {
+        x,
+        y,
+        m,
+        srid: Some(4326),
+    }
+}
+
+fn new_point_zm(x: f64, y: f64, z: f64, m: f64) -> PointZM {
+    PointZM {
+        x,
+        y,
+        z,
+        m,
+        srid: Some(4326),
     }
 }
 
@@ -88,6 +132,9 @@ fn smoke_test() {
     let sample = NewGeometrySample {
         name: String::from("smoke_test"),
         point: new_point(72.0, 64.0),
+        point_z: new_point_z(72.0, 64.0, 10.0),
+        point_m: new_point_m(72.0, 64.0, 11.0),
+        point_zm: new_point_zm(72.0, 64.0, 10.0, 11.0),
         linestring: new_line(vec![(72.0, 64.0), (73.0, 64.0)]),
     };
     let point_from_db: GeometrySample = diesel::insert_into(geometry_samples::table)
@@ -112,6 +159,9 @@ macro_rules! operator_test {
             let sample = NewGeometrySample {
                 name: String::from(stringify!($t)),
                 point: new_point(71.0, 63.0),
+                point_z: new_point_z(72.0, 64.0, 10.0),
+                point_m: new_point_m(72.0, 64.0, 11.0),
+                point_zm: new_point_zm(72.0, 64.0, 10.0, 11.0),
                 linestring: new_line(vec![(72.0, 64.0), (73.0, 64.0)]),
             };
             let _ = diesel::insert_into(geometry_samples::table)

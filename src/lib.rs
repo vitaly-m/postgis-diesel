@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate diesel;
 
-use std::fmt::Debug;
+use std::fmt::{Debug};
 use std::io::Cursor;
 
 use diesel::backend::Backend;
@@ -18,6 +18,7 @@ use sql_types::*;
 
 pub mod operators;
 pub mod sql_types;
+pub mod types;
 
 /// Container for a `postgis::ewkb::Point`, use that structure in `Insertable` or `Queryable` struct.
 /// ```
