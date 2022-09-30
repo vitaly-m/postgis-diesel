@@ -5,7 +5,9 @@ use std::env;
 use std::sync::Once;
 
 // use diesel::query_dsl::filter_dsl::FilterDsl;
-use diesel::{Connection, ExpressionMethods, PgConnection, QueryDsl, QueryResult, RunQueryDsl};
+use diesel::pg::PgConnection;
+use diesel::Connection;
+use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use dotenv::dotenv;
 use postgis::ewkb::{self, LineStringT};
 
@@ -59,10 +61,10 @@ fn establish_connection() -> PgConnection {
 }
 
 fn initialize() -> PgConnection {
-    let conn = establish_connection();
+    let mut conn = establish_connection();
     INIT.call_once(|| {
-        let _ = diesel::sql_query("CREATE EXTENSION IF NOT EXISTS postgis").execute(&conn);
-        let _ = diesel::sql_query("DROP TABLE geometry_samples").execute(&conn);
+        let _ = diesel::sql_query("CREATE EXTENSION IF NOT EXISTS postgis").execute(&mut conn);
+        let _ = diesel::sql_query("DROP TABLE geometry_samples").execute(&mut conn);
         let _ = diesel::sql_query(
             "CREATE TABLE geometry_samples
 (
@@ -75,7 +77,7 @@ fn initialize() -> PgConnection {
     linestring geometry(Linestring,4326) NOT NULL
 )",
         )
-        .execute(&conn);
+        .execute(&mut conn);
     });
     conn
 }
@@ -128,7 +130,7 @@ fn new_point_zm(x: f64, y: f64, z: f64, m: f64) -> PointZM {
 
 #[test]
 fn smoke_test() {
-    let conn = initialize();
+    let mut conn = initialize();
     let sample = NewGeometrySample {
         name: String::from("smoke_test"),
         point: new_point(72.0, 64.0),
@@ -139,7 +141,7 @@ fn smoke_test() {
     };
     let point_from_db: GeometrySample = diesel::insert_into(geometry_samples::table)
         .values(&sample)
-        .get_result(&conn)
+        .get_result(&mut conn)
         .expect("Error saving geometry sample");
 
     assert_eq!(sample.name, point_from_db.name);
@@ -148,14 +150,14 @@ fn smoke_test() {
 
     let _ =
         diesel::delete(geometry_samples::table.filter(geometry_samples::id.eq(point_from_db.id)))
-            .execute(&conn);
+            .execute(&mut conn);
 }
 
 macro_rules! operator_test {
     ($t:ident; $f:ident; $find:expr; $not_find:expr) => {
         #[test]
         fn $t() {
-            let conn = initialize();
+            let mut conn = initialize();
             let sample = NewGeometrySample {
                 name: String::from(stringify!($t)),
                 point: new_point(71.0, 63.0),
@@ -166,12 +168,12 @@ macro_rules! operator_test {
             };
             let _ = diesel::insert_into(geometry_samples::table)
                 .values(&sample)
-                .get_result::<GeometrySample>(&conn)
+                .get_result::<GeometrySample>(&mut conn)
                 .expect("Error saving geometry sample");
             let found = geometry_samples::table
                 .filter($f(geometry_samples::linestring, $find))
                 .filter(geometry_samples::name.eq(stringify!($t)))
-                .get_result::<GeometrySample>(&conn)
+                .get_result::<GeometrySample>(&mut conn)
                 .expect("Error getting geometry");
 
             assert_eq!(sample.point, found.point);
@@ -180,7 +182,7 @@ macro_rules! operator_test {
             let not_found: QueryResult<GeometrySample> = geometry_samples::table
                 .filter($f(geometry_samples::linestring, $not_find))
                 .filter(geometry_samples::name.eq(stringify!($t)))
-                .get_result(&conn);
+                .get_result(&mut conn);
             assert_eq!(not_found, Err(diesel::result::Error::NotFound));
         }
     };
