@@ -11,12 +11,16 @@ use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use dotenv::dotenv;
 
 use postgis_diesel::operators::*;
-use postgis_diesel::types::{LineString, Point, PointM, PointZ, PointZM, Polygon};
+use postgis_diesel::points::*;
+use postgis_diesel::linestring::*;
+use postgis_diesel::polygon::*;
+use postgis_diesel::multipoint::*;
+
 
 static INIT: Once = Once::new();
 
 #[derive(Insertable)]
-#[table_name = "geometry_samples"]
+#[diesel(table_name = geometry_samples)]
 struct NewGeometrySample {
     name: String,
     point: Point,
@@ -25,6 +29,7 @@ struct NewGeometrySample {
     point_zm: PointZM,
     linestring: LineString<Point>,
     polygon: Polygon<Point>,
+    multipoint: MultiPoint<Point>,
 }
 
 #[derive(Queryable, Debug, PartialEq)]
@@ -37,6 +42,7 @@ struct GeometrySample {
     point_zm: PointZM,
     linestring: LineString<Point>,
     polygon: Polygon<Point>,
+    multipoint: MultiPoint<Point>,
 }
 
 table! {
@@ -51,6 +57,7 @@ table! {
         point_zm -> Geometry,
         linestring -> Geometry,
         polygon -> Geometry,
+        multipoint -> Geometry,
     }
 }
 
@@ -76,7 +83,8 @@ fn initialize() -> PgConnection {
     point_m    geometry(PointM,4326) NOT NULL,
     point_zm   geometry(PointZM,4326) NOT NULL,
     linestring geometry(Linestring,4326) NOT NULL,
-    polygon    geometry(Polygon,4326) NOT NULL
+    polygon    geometry(Polygon,4326) NOT NULL,
+    multipoint geometry(MultiPoint,4326) NOT NULL
 )",
         )
         .execute(&mut conn);
@@ -148,6 +156,7 @@ fn smoke_test() {
         point_zm: new_point_zm(72.0, 64.0, 10.0, 11.0),
         linestring: new_line(vec![(72.0, 64.0), (73.0, 64.0)]),
         polygon: polygon,
+        multipoint: MultiPoint { points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)], srid: Some(4326) },
     };
     let point_from_db: GeometrySample = diesel::insert_into(geometry_samples::table)
         .values(&sample)
@@ -156,8 +165,12 @@ fn smoke_test() {
 
     assert_eq!(sample.name, point_from_db.name);
     assert_eq!(sample.point, point_from_db.point);
+    assert_eq!(sample.point_z, point_from_db.point_z);
+    assert_eq!(sample.point_m, point_from_db.point_m);
+    assert_eq!(sample.point_zm, point_from_db.point_zm);
     assert_eq!(sample.linestring, point_from_db.linestring);
     assert_eq!(sample.polygon, point_from_db.polygon);
+    assert_eq!(sample.multipoint, point_from_db.multipoint);
 
     let _ =
         diesel::delete(geometry_samples::table.filter(geometry_samples::id.eq(point_from_db.id)))
@@ -179,6 +192,7 @@ macro_rules! operator_test {
                 point_zm: new_point_zm(72.0, 64.0, 10.0, 11.0),
                 linestring: new_line(vec![(72.0, 64.0), (73.0, 64.0)]),
                 polygon: polygon,
+                multipoint: MultiPoint { points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)], srid: Some(4326) },
             };
             let _ = diesel::insert_into(geometry_samples::table)
                 .values(&sample)

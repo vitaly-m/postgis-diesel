@@ -19,6 +19,11 @@ use sql_types::*;
 pub mod operators;
 pub mod sql_types;
 pub mod types;
+pub mod points;
+pub mod linestring;
+pub mod polygon;
+pub mod multiline;
+pub mod multipoint;
 
 /// Container for a `postgis::ewkb::Point`, use that structure in `Insertable` or `Queryable` struct.
 /// ```
