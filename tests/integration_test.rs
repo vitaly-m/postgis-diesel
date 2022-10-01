@@ -9,11 +9,9 @@ use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use dotenv::dotenv;
-use postgis::ewkb::{self, LineStringT};
 
 use postgis_diesel::operators::*;
-use postgis_diesel::types::{Point, PointM, PointZ, PointZM};
-use postgis_diesel::*;
+use postgis_diesel::types::{Point, PointM, PointZ, PointZM, LineString};
 
 static INIT: Once = Once::new();
 
@@ -25,7 +23,7 @@ struct NewGeometrySample {
     point_z: PointZ,
     point_m: PointM,
     point_zm: PointZM,
-    linestring: LineStringC<LineStringT<ewkb::Point>>,
+    linestring: LineString<Point>,
 }
 
 #[derive(Queryable, Debug, PartialEq)]
@@ -36,7 +34,7 @@ struct GeometrySample {
     point_z: PointZ,
     point_m: PointM,
     point_zm: PointZM,
-    linestring: LineStringC<LineStringT<ewkb::Point>>,
+    linestring: LineString<Point>,
 }
 
 table! {
@@ -82,14 +80,12 @@ fn initialize() -> PgConnection {
     conn
 }
 
-fn new_line(points: Vec<(f64, f64)>) -> LineStringC<LineStringT<ewkb::Point>> {
-    let mut ls = LineStringT::new();
+fn new_line(points: Vec<(f64, f64)>) -> LineString<Point> {
+    let mut l_points = Vec::with_capacity(points.len());
     for p in points {
-        ls.points
-            .push(ewkb::Point::new(p.0, p.1, Option::Some(4326)));
+        l_points.push(Point{x: p.0, y:p.1, srid:Option::Some(4326)});
     }
-    ls.srid = Option::Some(4326);
-    LineStringC { v: ls }
+    LineString { points: l_points, srid: Option::Some(4326) }
 }
 
 fn new_point(x: f64, y: f64) -> Point {
