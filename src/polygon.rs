@@ -58,13 +58,6 @@ where
             )
             .into());
         }
-        if self.rings.first().unwrap().len() < 4 {
-            return Err(format!(
-                "The ring with {} elements can't be closed",
-                self.rings.len()
-            )
-            .into());
-        }
         out.write_u8(LITTLE_ENDIAN)?;
         // polygon can have points of the same type
         let mut g_type = GeometryType::Polygon as u32;
@@ -85,7 +78,8 @@ where
         for (ring_n, ring) in self.rings.iter().enumerate() {
             if ring.len() < 4 {
                 return Err(format!(
-                    "The ring with {} elements can't be closed",
+                    "The {} ring with {} elements can't be closed",
+                    ring_n,
                     self.rings.len()
                 )
                 .into());
