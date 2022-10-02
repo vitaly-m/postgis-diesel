@@ -13,6 +13,7 @@ use dotenv::dotenv;
 use postgis_diesel::linestring::*;
 use postgis_diesel::multiline::*;
 use postgis_diesel::multipoint::*;
+use postgis_diesel::multipolygon::*;
 use postgis_diesel::operators::*;
 use postgis_diesel::points::*;
 use postgis_diesel::polygon::*;
@@ -31,6 +32,7 @@ struct NewGeometrySample {
     polygon: Polygon<Point>,
     multipoint: MultiPoint<Point>,
     multiline: MultiLineString<Point>,
+    multipolygon: MultiPolygon<Point>,
 }
 
 #[derive(Queryable, Debug, PartialEq)]
@@ -45,6 +47,7 @@ struct GeometrySample {
     polygon: Polygon<Point>,
     multipoint: MultiPoint<Point>,
     multiline: MultiLineString<Point>,
+    multipolygon: MultiPolygon<Point>,
 }
 
 table! {
@@ -61,6 +64,7 @@ table! {
         polygon -> Geometry,
         multipoint -> Geometry,
         multiline -> Geometry,
+        multipolygon -> Geometry,
     }
 }
 
@@ -79,16 +83,17 @@ fn initialize() -> PgConnection {
         let _ = diesel::sql_query(
             "CREATE TABLE geometry_samples
 (
-    id         SERIAL PRIMARY KEY,
-    name       text,
-    point      geometry(Point,4326) NOT NULL,
-    point_z    geometry(PointZ,4326) NOT NULL,
-    point_m    geometry(PointM,4326) NOT NULL,
-    point_zm   geometry(PointZM,4326) NOT NULL,
-    linestring geometry(Linestring,4326) NOT NULL,
-    polygon    geometry(Polygon,4326) NOT NULL,
-    multipoint geometry(MultiPoint,4326) NOT NULL,
-    multiline  geometry(MultiLineString,4326) NOT NULL
+    id           SERIAL PRIMARY KEY,
+    name         text,
+    point        geometry(Point,4326) NOT NULL,
+    point_z      geometry(PointZ,4326) NOT NULL,
+    point_m      geometry(PointM,4326) NOT NULL,
+    point_zm     geometry(PointZM,4326) NOT NULL,
+    linestring   geometry(Linestring,4326) NOT NULL,
+    polygon      geometry(Polygon,4326) NOT NULL,
+    multipoint   geometry(MultiPoint,4326) NOT NULL,
+    multiline    geometry(MultiLineString,4326) NOT NULL,
+    multipolygon geometry(MultiPolygon,4326) NOT NULL
 )",
         )
         .execute(&mut conn);
@@ -161,6 +166,21 @@ fn smoke_test() {
     multiline.add_points(&vec![new_point(72.0, 64.0), new_point(73.0, 65.0)]);
     multiline.add_line();
     multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+    let mut multipolygon = MultiPolygon::new(Some(4326));
+    multipolygon.add_empty_polygon()
+        .add_points(&vec![
+            new_point(72.0, 64.0),
+            new_point(73.0, 65.0),
+            new_point(71.0, 62.0),
+            new_point(72.0, 64.0),
+        ])
+        .add_empty_polygon()
+        .add_points(&vec![
+            new_point(75.0, 64.0),
+            new_point(74.0, 65.0),
+            new_point(74.0, 62.0),
+            new_point(75.0, 64.0),
+        ]);
     let sample = NewGeometrySample {
         name: String::from("smoke_test"),
         point: new_point(72.0, 64.0),
@@ -174,6 +194,7 @@ fn smoke_test() {
             srid: Some(4326),
         },
         multiline: multiline,
+        multipolygon: multipolygon,
     };
     let point_from_db: GeometrySample = diesel::insert_into(geometry_samples::table)
         .values(&sample)
@@ -211,6 +232,21 @@ macro_rules! operator_test {
             multiline.add_points(&vec![new_point(72.0, 64.0), new_point(73.0, 65.0)]);
             multiline.add_line();
             multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+            let mut multipolygon = MultiPolygon::new(Some(4326));
+            multipolygon.add_empty_polygon()
+                .add_points(&vec![
+                    new_point(72.0, 64.0),
+                    new_point(73.0, 65.0),
+                    new_point(71.0, 62.0),
+                    new_point(72.0, 64.0),
+                ])
+                .add_empty_polygon()
+                .add_points(&vec![
+                    new_point(75.0, 64.0),
+                    new_point(74.0, 65.0),
+                    new_point(74.0, 62.0),
+                    new_point(75.0, 64.0),
+                ]);
             let sample = NewGeometrySample {
                 name: String::from(stringify!($t)),
                 point: new_point(71.0, 63.0),
@@ -224,6 +260,7 @@ macro_rules! operator_test {
                     srid: Some(4326),
                 },
                 multiline: multiline,
+                multipolygon: multipolygon,
             };
             let _ = diesel::insert_into(geometry_samples::table)
                 .values(&sample)

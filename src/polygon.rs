@@ -1,4 +1,4 @@
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::io::Cursor;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
@@ -8,7 +8,11 @@ use diesel::{
     serialize::{self, IsNull, Output, ToSql},
 };
 
-use crate::points::{PointT, write_point_coordinates, read_point_coordinates};
+use crate::ewkb::{
+    read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN, SRID,
+};
+
+use crate::points::{read_point_coordinates, write_point_coordinates, Dimension, PointT};
 use crate::sql_types::*;
 
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
@@ -19,9 +23,14 @@ pub struct Polygon<T> {
 }
 
 impl<T> Polygon<T>
-where T: PointT + Clone {
+where
+    T: PointT + Clone,
+{
     pub fn new(srid: Option<u32>) -> Self {
-        Polygon { rings: Vec::new(), srid: srid }
+        Polygon {
+            rings: Vec::new(),
+            srid: srid,
+        }
     }
 
     pub fn add_ring<'a>(&'a mut self) {
@@ -44,61 +53,55 @@ where T: PointT + Clone {
             last.push(point.to_owned());
         }
     }
+
+    pub fn dimension(&self) -> u32 {
+        let mut dimension = Dimension::None as u32;
+        if let Some(ring) = self.rings.first() {
+            if let Some(point) = ring.first() {
+                dimension |= point.dimension();
+            }
+        }
+        dimension
+    }
+}
+
+impl<T> EwkbSerializable for Polygon<T>
+where
+    T: PointT + Clone,
+{
+    fn geometry_type(&self) -> u32 {
+        GeometryType::Polygon as u32 | self.dimension()
+    }
 }
 
 impl<T> ToSql<Geometry, Pg> for Polygon<T>
 where
-    T: PointT + Debug + PartialEq,
+    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
 {
     fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        if self.rings.len() < 1 {
-            return Err(format!(
-                "Polygon must contain at least one ring but has {}",
-                self.rings.len()
-            )
-            .into());
-        }
-        out.write_u8(LITTLE_ENDIAN)?;
-        // polygon can have points of the same type
-        let mut g_type = GeometryType::Polygon as u32;
-        let first_point = self.rings.first().unwrap().first().unwrap();
-        if self.srid.is_some() {
-            g_type |= SRID;
-        }
-        g_type |= first_point.dimension();
-        match self.srid {
-            Some(srid) => {
-                out.write_u32::<LittleEndian>(g_type)?;
-                out.write_u32::<LittleEndian>(srid)?;
-            }
-            None => out.write_u32::<LittleEndian>(g_type)?,
-        }
-        // number of rings
-        out.write_u32::<LittleEndian>(self.rings.len() as u32)?;
-        for (ring_n, ring) in self.rings.iter().enumerate() {
-            if ring.len() < 4 {
-                return Err(format!(
-                    "The {} ring with {} elements can't be closed",
-                    ring_n,
-                    self.rings.len()
-                )
-                .into());
-            }
-            if ring.first().unwrap() != ring.last().unwrap() {
-                return Err(format!(
-                    "The {} ring is not closed",
-                    ring_n
-                )
-                .into());
-            }
-            //number of points in ring
-            out.write_u32::<LittleEndian>(ring.len() as u32)?;
-            for point in ring.iter() {
-                write_point_coordinates(point, out)?;
-            }
-        }
-        Ok(IsNull::No)
+        write_polygon(self, self.srid, out)
     }
+}
+
+pub fn write_polygon<T>(
+    polygon: &Polygon<T>,
+    srid: Option<u32>,
+    out: &mut Output<Pg>,
+) -> serialize::Result
+where
+    T: PointT + EwkbSerializable + Clone,
+{
+    write_ewkb_header(polygon, srid, out)?;
+    // number of rings
+    out.write_u32::<LittleEndian>(polygon.rings.len() as u32)?;
+    for ring in polygon.rings.iter() {
+        //number of points in ring
+        out.write_u32::<LittleEndian>(ring.len() as u32)?;
+        for point in ring.iter() {
+            write_point_coordinates(point, out)?;
+        }
+    }
+    Ok(IsNull::No)
 }
 
 impl<T> FromSql<Geometry, Pg> for Polygon<T>
@@ -116,35 +119,32 @@ where
     }
 }
 
-
 fn read_polygon<T, P>(cursor: &mut Cursor<&[u8]>) -> deserialize::Result<Polygon<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
 {
-    let g_type = cursor.read_u32::<T>()?;
-    if GeometryType::from(g_type) != GeometryType::Polygon {
-        return Err(format!(
-            "Geometry {:?} is not a Polygon",
-            GeometryType::from(g_type)
-        )
-        .into());
-    }
-    let mut srid = None;
-    // SRID included
-    if g_type & SRID == SRID {
-        srid = Some(cursor.read_u32::<T>()?);
-    }
+    let g_header = read_ewkb_header::<T>(GeometryType::Polygon, cursor)?;
+    read_polygon_body::<T, P>(g_header.g_type, g_header.srid, cursor)
+}
+
+pub fn read_polygon_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<Polygon<P>>
+where
+    T: byteorder::ByteOrder,
+    P: PointT + Clone,
+{
     let rings_n = cursor.read_u32::<T>()?;
     let mut polygon = Polygon::new(srid);
-
     for _i in 0..rings_n {
         polygon.add_ring();
         let points_n = cursor.read_u32::<T>()?;
         for _p in 0..points_n {
-            polygon.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
+            polygon.add_point(read_point_coordinates::<T, P>(
+                cursor,
+                g_type,
+                srid,
+            )?);
         }
     }
     Ok(polygon)
 }
-

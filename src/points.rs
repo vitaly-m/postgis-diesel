@@ -1,11 +1,19 @@
 use std::{fmt, io::Cursor};
 
-use byteorder::{LittleEndian, BigEndian, ReadBytesExt, WriteBytesExt};
-use diesel::{serialize::{ToSql, Output, self, IsNull}, pg::{self, Pg}, deserialize::{self, FromSql}};
+use crate::ewkb::{
+    read_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN, LITTLE_ENDIAN, SRID,
+};
+use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use diesel::{
+    deserialize::{self, FromSql},
+    pg::{self, Pg},
+    serialize::{self, IsNull, Output, ToSql},
+};
 
-use crate::sql_types::{Geometry, GeometryType, LITTLE_ENDIAN, SRID, BIG_ENDIAN};
+use crate::{ewkb::write_ewkb_header, sql_types::*};
 
 pub enum Dimension {
+    None = 0,
     Z = 0x80000000,
     M = 0x40000000,
     ZM = 0x40000000 | 0x80000000,
@@ -76,6 +84,30 @@ pub trait PointT {
     fn get_z(&self) -> Option<f64>;
     fn get_m(&self) -> Option<f64>;
     fn dimension(&self) -> u32;
+}
+
+impl EwkbSerializable for Point {
+    fn geometry_type(&self) -> u32 {
+        GeometryType::Point as u32
+    }
+}
+
+impl EwkbSerializable for PointZ {
+    fn geometry_type(&self) -> u32 {
+        GeometryType::Point as u32 | Dimension::Z as u32
+    }
+}
+
+impl EwkbSerializable for PointM {
+    fn geometry_type(&self) -> u32 {
+        GeometryType::Point as u32 | Dimension::M as u32
+    }
+}
+
+impl EwkbSerializable for PointZM {
+    fn geometry_type(&self) -> u32 {
+        GeometryType::Point as u32 | Dimension::ZM as u32
+    }
 }
 
 impl PointT for Point {
@@ -297,46 +329,37 @@ impl_point_from_sql!(PointZM);
 
 impl ToSql<Geometry, Pg> for Point {
     fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_point(self, out)
+        write_point(self, self.get_srid(), out)?;
+        Ok(IsNull::No)
     }
 }
 
 impl ToSql<Geometry, Pg> for PointZ {
     fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_point(self, out)
+        write_point(self, self.get_srid(), out)?;
+        Ok(IsNull::No)
     }
 }
 
 impl ToSql<Geometry, Pg> for PointM {
     fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_point(self, out)
+        write_point(self, self.get_srid(), out)?;
+        Ok(IsNull::No)
     }
 }
 
 impl ToSql<Geometry, Pg> for PointZM {
     fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_point(self, out)
+        write_point(self, self.get_srid(), out)?;
+        Ok(IsNull::No)
     }
 }
 
-fn write_point<T>(point: &T, out: &mut Output<Pg>) -> serialize::Result
+pub fn write_point<T>(point: &T, srid: Option<u32>, out: &mut Output<Pg>) -> serialize::Result
 where
-    T: PointT,
+    T: PointT + EwkbSerializable,
 {
-    out.write_u8(LITTLE_ENDIAN)?;
-    let mut p_type = GeometryType::Point as u32;
-    if point.get_srid().is_some() {
-        p_type |= SRID;
-    }
-    p_type |= point.dimension();
-
-    match point.get_srid() {
-        Some(srid) => {
-            out.write_u32::<LittleEndian>(p_type)?;
-            out.write_u32::<LittleEndian>(srid)?;
-        }
-        None => out.write_u32::<LittleEndian>(p_type)?,
-    }
+    write_ewkb_header(point, srid, out)?;
     write_point_coordinates(point, out)?;
     Ok(IsNull::No)
 }
@@ -361,16 +384,8 @@ where
     T: byteorder::ByteOrder,
     P: PointT,
 {
-    let g_type = cursor.read_u32::<T>()?;
-    if GeometryType::from(g_type) != GeometryType::Point {
-        return Err(format!("Geometry {:?} is not a point", GeometryType::from(g_type)).into());
-    }
-    let mut srid = None;
-    // SRID included
-    if g_type & SRID == SRID {
-        srid = Some(cursor.read_u32::<T>()?);
-    }
-    read_point_coordinates::<T, P>(cursor, g_type, srid)
+    let g_header = read_ewkb_header::<T>(GeometryType::Point, cursor)?;
+    read_point_coordinates::<T, P>(cursor, g_header.g_type, g_header.srid)
 }
 
 pub fn read_point_coordinates<T, P>(

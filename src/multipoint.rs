@@ -1,6 +1,9 @@
-use std::fmt::{Debug};
+use std::fmt::Debug;
 use std::io::Cursor;
 
+use crate::{ewkb::{
+    write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN, read_ewkb_header,
+}, points::write_point};
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
     deserialize::{self, FromSql},
@@ -8,7 +11,7 @@ use diesel::{
     serialize::{self, IsNull, Output, ToSql},
 };
 
-use crate::points::{PointT, write_point_coordinates, read_point_coordinates};
+use crate::points::{read_point_coordinates, PointT};
 use crate::sql_types::*;
 
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
@@ -16,6 +19,19 @@ use crate::sql_types::*;
 pub struct MultiPoint<T> {
     pub points: Vec<T>,
     pub srid: Option<u32>,
+}
+
+impl<T> EwkbSerializable for MultiPoint<T>
+where
+    T: PointT,
+{
+    fn geometry_type(&self) -> u32 {
+        let mut g_type = GeometryType::MultiPoint as u32;
+        if let Some(point) = self.points.first() {
+            g_type |= point.dimension();
+        }
+        g_type
+    }
 }
 
 impl<T> FromSql<Geometry, Pg> for MultiPoint<T>
@@ -33,41 +49,16 @@ where
     }
 }
 
-
 impl<T> ToSql<Geometry, Pg> for MultiPoint<T>
 where
-    T: PointT + Debug,
+    T: PointT + Debug + EwkbSerializable,
 {
     fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        if self.points.len() < 1 {
-            return Err(format!(
-                "MultiPoint must contain at least one point but has {}",
-                self.points.len()
-            )
-            .into());
-        }
-        out.write_u8(LITTLE_ENDIAN)?;
-        let mut g_type = GeometryType::MultiPoint as u32;
-        let first_point = self.points.first().unwrap();
-        if self.srid.is_some() {
-            g_type |= SRID;
-        }
-        g_type |= first_point.dimension();
-        match self.srid {
-            Some(srid) => {
-                out.write_u32::<LittleEndian>(g_type)?;
-                out.write_u32::<LittleEndian>(srid)?;
-            }
-            None => out.write_u32::<LittleEndian>(g_type)?,
-        }
+        write_ewkb_header(self, self.srid, out)?;
         // size and points
         out.write_u32::<LittleEndian>(self.points.len() as u32)?;
         for point in self.points.iter() {
-            let mut p_type = GeometryType::Point as u32;
-            p_type |= point.dimension();
-            out.write_u8(LITTLE_ENDIAN)?;
-            out.write_u32::<LittleEndian>(p_type)?;
-            write_point_coordinates(point, out)?;
+            write_point(point, None, out)?;
         }
         Ok(IsNull::No)
     }
@@ -78,19 +69,7 @@ where
     T: byteorder::ByteOrder,
     P: PointT,
 {
-    let g_type = cursor.read_u32::<T>()?;
-    if GeometryType::from(g_type) != GeometryType::MultiPoint {
-        return Err(format!(
-            "Geometry {:?} is not a MultiPoint",
-            GeometryType::from(g_type)
-        )
-        .into());
-    }
-    let mut srid = None;
-    // SRID included
-    if g_type & SRID == SRID {
-        srid = Some(cursor.read_u32::<T>()?);
-    }
+    let g_header = read_ewkb_header::<T>(GeometryType::MultiPoint, cursor)?;    
     let len = cursor.read_u32::<T>()?;
 
     let mut points = Vec::with_capacity(len as usize);
@@ -98,10 +77,10 @@ where
         // skip 1 byte for byte order and 4 bytes for point type
         cursor.read_u8()?;
         cursor.read_u32::<T>()?;
-        points.push(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
+        points.push(read_point_coordinates::<T, P>(cursor, g_header.g_type, g_header.srid)?);
     }
     Ok(MultiPoint {
         points: points,
-        srid: srid,
+        srid: g_header.srid,
     })
 }
