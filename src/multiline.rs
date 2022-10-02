@@ -8,7 +8,11 @@ use diesel::{
     serialize::{self, IsNull, Output, ToSql},
 };
 
-use crate::{ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN, write_ewkb_header, read_ewkb_header}, linestring::write_linestring};
+use crate::{
+    ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    linestring::write_linestring,
+    points::Dimension,
+};
 
 use crate::linestring::LineString;
 use crate::points::{read_point_coordinates, PointT};
@@ -55,6 +59,14 @@ where
             last.points.push(point.to_owned());
         }
     }
+
+    pub fn dimension(&self) -> u32 {
+        let mut dimension = Dimension::None as u32;
+        if let Some(line) = self.lines.first() {
+            dimension |= line.dimension();
+        }
+        dimension
+    }
 }
 
 impl<T> EwkbSerializable for MultiLineString<T>
@@ -72,16 +84,10 @@ where
 
 impl<T> ToSql<Geometry, Pg> for MultiLineString<T>
 where
-    T: PointT + Debug + PartialEq + EwkbSerializable,
+    T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
 {
     fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_ewkb_header(self, self.srid, out)?;
-        // number of lines
-        out.write_u32::<LittleEndian>(self.lines.len() as u32)?;
-        for line in self.lines.iter() {
-            write_linestring(line, None, out)?;
-        }
-        Ok(IsNull::No)
+        write_multiline(self, self.srid, out)
     }
 }
 
@@ -100,15 +106,39 @@ where
     }
 }
 
+pub fn write_multiline<T>(
+    multiline: &MultiLineString<T>,
+    srid: Option<u32>,
+    out: &mut Output<Pg>,
+) -> serialize::Result
+where
+    T: PointT + EwkbSerializable + Clone,
+{
+    write_ewkb_header(multiline, srid, out)?;
+    // number of lines
+    out.write_u32::<LittleEndian>(multiline.lines.len() as u32)?;
+    for line in multiline.lines.iter() {
+        write_linestring(line, None, out)?;
+    }
+    Ok(IsNull::No)
+}
+
 fn read_multiline<T, P>(cursor: &mut Cursor<&[u8]>) -> deserialize::Result<MultiLineString<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
 {
     let g_header = read_ewkb_header::<T>(GeometryType::MultiLineString, cursor)?;
-    let lines_n = cursor.read_u32::<T>()?;
-    let mut multiline = MultiLineString::new(g_header.srid);
+    read_multiline_body::<T, P>(g_header.g_type, g_header.srid, cursor)
+}
 
+pub fn read_multiline_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<MultiLineString<P>>
+where
+    T: byteorder::ByteOrder,
+    P: PointT + Clone,
+{
+    let lines_n = cursor.read_u32::<T>()?;
+    let mut multiline = MultiLineString::new(srid);
     for _i in 0..lines_n {
         multiline.add_line();
         // skip 1 byte for byte order and 4 bytes for point type
@@ -116,7 +146,11 @@ where
         cursor.read_u32::<T>()?;
         let points_n = cursor.read_u32::<T>()?;
         for _p in 0..points_n {
-            multiline.add_point(read_point_coordinates::<T, P>(cursor, g_header.g_type, g_header.srid)?);
+            multiline.add_point(read_point_coordinates::<T, P>(
+                cursor,
+                g_type,
+                srid,
+            )?);
         }
     }
     Ok(multiline)

@@ -11,3 +11,4 @@ pub mod points;
 pub mod polygon;
 pub mod sql_types;
 pub mod types;
+pub mod geometrycollection;

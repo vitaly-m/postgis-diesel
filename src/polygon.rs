@@ -9,7 +9,7 @@ use diesel::{
 };
 
 use crate::ewkb::{
-    read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN, SRID,
+    read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN,
 };
 
 use crate::points::{read_point_coordinates, write_point_coordinates, Dimension, PointT};

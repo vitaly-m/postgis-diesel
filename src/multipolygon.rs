@@ -1,7 +1,11 @@
 use std::fmt::Debug;
 use std::io::Cursor;
 
-use crate::{ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN, SRID, write_ewkb_header, read_ewkb_header}, polygon::{write_polygon, read_polygon_body}};
+use crate::{
+    ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    points::Dimension,
+    polygon::{read_polygon_body, write_polygon},
+};
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
     deserialize::{self, FromSql},
@@ -10,10 +14,7 @@ use diesel::{
 };
 
 use crate::sql_types::*;
-use crate::{
-    points::{PointT},
-    polygon::Polygon,
-};
+use crate::{points::PointT, polygon::Polygon};
 
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
@@ -59,6 +60,14 @@ where
         }
         self
     }
+
+    pub fn dimension(&self) -> u32 {
+        let mut dimension = Dimension::None as u32;
+        if let Some(polygon) = self.polygons.first() {
+            dimension |= polygon.dimension();
+        }
+        dimension
+    }
 }
 
 impl<T> EwkbSerializable for MultiPolygon<T>
@@ -79,13 +88,7 @@ where
     T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
 {
     fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_ewkb_header(self, self.srid, out)?;
-        // number of polygons
-        out.write_u32::<LittleEndian>(self.polygons.len() as u32)?;
-        for polygon in self.polygons.iter() {
-            write_polygon(polygon, None, out)?;
-        }
-        Ok(IsNull::No)
+        write_multi_polygon(self, self.srid, out)
     }
 }
 
@@ -104,20 +107,47 @@ where
     }
 }
 
+pub fn write_multi_polygon<T>(
+    multipolygon: &MultiPolygon<T>,
+    srid: Option<u32>,
+    out: &mut Output<Pg>,
+) -> serialize::Result
+where
+    T: PointT + EwkbSerializable + Clone,
+{
+    write_ewkb_header(multipolygon, srid, out)?;
+    // number of polygons
+    out.write_u32::<LittleEndian>(multipolygon.polygons.len() as u32)?;
+    for polygon in multipolygon.polygons.iter() {
+        write_polygon(polygon, None, out)?;
+    }
+    Ok(IsNull::No)
+}
+
 fn read_multi_polygon<T, P>(cursor: &mut Cursor<&[u8]>) -> deserialize::Result<MultiPolygon<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
 {
     let g_header = read_ewkb_header::<T>(GeometryType::MultiPolygon, cursor)?;
+    read_multi_polygon_body::<T, P>(g_header.g_type, g_header.srid, cursor)
+}
+
+pub fn read_multi_polygon_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<MultiPolygon<P>>
+where
+    T: byteorder::ByteOrder,
+    P: PointT + Clone,
+{
     let polygons_n = cursor.read_u32::<T>()?;
-    let mut polygon = MultiPolygon::new(g_header.srid);
+    let mut polygon = MultiPolygon::new(srid);
 
     for _i in 0..polygons_n {
         // skip 1 byte for byte order and 4 bytes for point type
         cursor.read_u8()?;
         cursor.read_u32::<T>()?;
-        polygon.polygons.push(read_polygon_body::<T, P>(g_header.g_type, None, cursor)?);
+        polygon
+            .polygons
+            .push(read_polygon_body::<T, P>(g_type, srid, cursor)?);
     }
     Ok(polygon)
 }

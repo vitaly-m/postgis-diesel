@@ -1,7 +1,7 @@
 use std::{fmt, io::Cursor};
 
 use crate::ewkb::{
-    read_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN, LITTLE_ENDIAN, SRID,
+    read_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{

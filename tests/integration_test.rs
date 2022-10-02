@@ -10,6 +10,7 @@ use diesel::Connection;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use dotenv::dotenv;
 
+use postgis_diesel::geometrycollection::{GeometryCollection, GeometryContainer};
 use postgis_diesel::linestring::*;
 use postgis_diesel::multiline::*;
 use postgis_diesel::multipoint::*;
@@ -33,6 +34,7 @@ struct NewGeometrySample {
     multipoint: MultiPoint<Point>,
     multiline: MultiLineString<Point>,
     multipolygon: MultiPolygon<Point>,
+    gemetrycollection: GeometryCollection<Point>,
 }
 
 #[derive(Queryable, Debug, PartialEq)]
@@ -48,6 +50,7 @@ struct GeometrySample {
     multipoint: MultiPoint<Point>,
     multiline: MultiLineString<Point>,
     multipolygon: MultiPolygon<Point>,
+    gemetrycollection: GeometryCollection<Point>,
 }
 
 table! {
@@ -65,6 +68,7 @@ table! {
         multipoint -> Geometry,
         multiline -> Geometry,
         multipolygon -> Geometry,
+        gemetrycollection -> Geometry,
     }
 }
 
@@ -83,17 +87,18 @@ fn initialize() -> PgConnection {
         let _ = diesel::sql_query(
             "CREATE TABLE geometry_samples
 (
-    id           SERIAL PRIMARY KEY,
-    name         text,
-    point        geometry(Point,4326) NOT NULL,
-    point_z      geometry(PointZ,4326) NOT NULL,
-    point_m      geometry(PointM,4326) NOT NULL,
-    point_zm     geometry(PointZM,4326) NOT NULL,
-    linestring   geometry(Linestring,4326) NOT NULL,
-    polygon      geometry(Polygon,4326) NOT NULL,
-    multipoint   geometry(MultiPoint,4326) NOT NULL,
-    multiline    geometry(MultiLineString,4326) NOT NULL,
-    multipolygon geometry(MultiPolygon,4326) NOT NULL
+    id                SERIAL PRIMARY KEY,
+    name              text,
+    point             geometry(Point,4326) NOT NULL,
+    point_z           geometry(PointZ,4326) NOT NULL,
+    point_m           geometry(PointM,4326) NOT NULL,
+    point_zm          geometry(PointZM,4326) NOT NULL,
+    linestring        geometry(Linestring,4326) NOT NULL,
+    polygon           geometry(Polygon,4326) NOT NULL,
+    multipoint        geometry(MultiPoint,4326) NOT NULL,
+    multiline         geometry(MultiLineString,4326) NOT NULL,
+    multipolygon      geometry(MultiPolygon,4326) NOT NULL,
+    gemetrycollection geometry(GeometryCollection,4326) NOT NULL
 )",
         )
         .execute(&mut conn);
@@ -152,6 +157,56 @@ fn new_point_zm(x: f64, y: f64, z: f64, m: f64) -> PointZM {
     }
 }
 
+fn new_geometry_collection() -> GeometryCollection<Point> {
+    let mut polygon = Polygon::new(Some(4326));
+    polygon.add_points(&vec![
+        new_point(72.0, 64.0),
+        new_point(73.0, 65.0),
+        new_point(71.0, 62.0),
+        new_point(72.0, 64.0),
+    ]);
+    let mut multiline = MultiLineString::new(Some(4326));
+    multiline.add_points(&vec![new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+    multiline.add_line();
+    multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+    let mut multipolygon = MultiPolygon::new(Some(4326));
+    multipolygon
+        .add_empty_polygon()
+        .add_points(&vec![
+            new_point(72.0, 64.0),
+            new_point(73.0, 65.0),
+            new_point(71.0, 62.0),
+            new_point(72.0, 64.0),
+        ])
+        .add_empty_polygon()
+        .add_points(&vec![
+            new_point(75.0, 64.0),
+            new_point(74.0, 65.0),
+            new_point(74.0, 62.0),
+            new_point(75.0, 64.0),
+        ]);
+    let mut gc = GeometryCollection::new(Some(4326));
+    gc.geometries
+        .push(GeometryContainer::Point(new_point(73.0, 64.0)));
+    gc.geometries
+        .push(GeometryContainer::LineString(new_line(vec![
+            (72.0, 64.0),
+            (73.0, 64.0),
+        ])));
+    gc.geometries.push(GeometryContainer::Polygon(polygon));
+    gc.geometries
+        .push(GeometryContainer::MultiPoint(MultiPoint {
+            points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
+            srid: Some(4326),
+        }));
+    gc.geometries.push(GeometryContainer::MultiLineString(multiline));
+    gc.geometries.push(GeometryContainer::MultiPolygon(multipolygon));
+    let mut inner_gc = GeometryCollection::new(Some(4326));
+    inner_gc.geometries.push(GeometryContainer::Point(new_point(74.0, 64.0)));
+    gc.geometries.push(GeometryContainer::GeometryCollection(inner_gc));
+    gc
+}
+
 #[test]
 fn smoke_test() {
     let mut conn = initialize();
@@ -167,7 +222,8 @@ fn smoke_test() {
     multiline.add_line();
     multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
     let mut multipolygon = MultiPolygon::new(Some(4326));
-    multipolygon.add_empty_polygon()
+    multipolygon
+        .add_empty_polygon()
         .add_points(&vec![
             new_point(72.0, 64.0),
             new_point(73.0, 65.0),
@@ -195,6 +251,7 @@ fn smoke_test() {
         },
         multiline: multiline,
         multipolygon: multipolygon,
+        gemetrycollection: new_geometry_collection(),
     };
     let point_from_db: GeometrySample = diesel::insert_into(geometry_samples::table)
         .values(&sample)
@@ -210,6 +267,8 @@ fn smoke_test() {
     assert_eq!(sample.polygon, point_from_db.polygon);
     assert_eq!(sample.multipoint, point_from_db.multipoint);
     assert_eq!(sample.multiline, point_from_db.multiline);
+    assert_eq!(sample.multipolygon, point_from_db.multipolygon);
+    assert_eq!(sample.gemetrycollection, point_from_db.gemetrycollection);
 
     let _ =
         diesel::delete(geometry_samples::table.filter(geometry_samples::id.eq(point_from_db.id)))
@@ -233,7 +292,8 @@ macro_rules! operator_test {
             multiline.add_line();
             multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
             let mut multipolygon = MultiPolygon::new(Some(4326));
-            multipolygon.add_empty_polygon()
+            multipolygon
+                .add_empty_polygon()
                 .add_points(&vec![
                     new_point(72.0, 64.0),
                     new_point(73.0, 65.0),
@@ -261,6 +321,7 @@ macro_rules! operator_test {
                 },
                 multiline: multiline,
                 multipolygon: multipolygon,
+                gemetrycollection: new_geometry_collection(),
             };
             let _ = diesel::insert_into(geometry_samples::table)
                 .values(&sample)

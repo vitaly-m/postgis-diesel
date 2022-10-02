@@ -12,7 +12,6 @@ pub enum GeometryType {
     MultiLineString,
     MultiPolygon,
     GeometryCollection,
-    Unknown,
 }
 
 pub const SRID: u32 = 0x20000000;
@@ -33,10 +32,8 @@ impl From<u32> for GeometryType {
             return Self::Polygon;
         } else if t & 2 == 2 {
             return Self::LineString;
-        } else if t & 1 == 1 {
-            return Self::Point;
         } else {
-            return Self::Unknown;
+            return Self::Point;
         }
     }
 }

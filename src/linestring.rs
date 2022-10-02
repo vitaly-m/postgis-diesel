@@ -9,7 +9,7 @@ use diesel::{
 };
 
 use crate::ewkb::{
-    read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN, SRID,
+    read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN,
 };
 use crate::points::{read_point_coordinates, write_point_coordinates, Dimension, PointT};
 use crate::sql_types::*;
@@ -45,7 +45,7 @@ where
 
 impl<T> FromSql<Geometry, Pg> for LineString<T>
 where
-    T: PointT + Debug,
+    T: PointT + Debug + Clone,
 {
     fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
         let mut r = Cursor::new(bytes.as_bytes());
@@ -87,20 +87,28 @@ where
 fn read_linestring<T, P>(cursor: &mut Cursor<&[u8]>) -> deserialize::Result<LineString<P>>
 where
     T: byteorder::ByteOrder,
-    P: PointT,
+    P: PointT + Clone,
 {
     let g_header = read_ewkb_header::<T>(GeometryType::LineString, cursor)?;
+    read_linestring_body::<T, P>(g_header.g_type, g_header.srid, cursor)
+}
+
+pub fn read_linestring_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<LineString<P>>
+where
+    T: byteorder::ByteOrder,
+    P: PointT + Clone,
+{
     let len = cursor.read_u32::<T>()?;
     let mut points = Vec::with_capacity(len as usize);
     for _i in 0..len {
         points.push(read_point_coordinates::<T, P>(
             cursor,
-            g_header.g_type,
-            g_header.srid,
+            g_type,
+            srid,
         )?);
     }
     Ok(LineString {
         points: points,
-        srid: g_header.srid,
+        srid: srid,
     })
 }
