@@ -1,7 +1,11 @@
 use std::io::Cursor;
 
-use byteorder::{LittleEndian, WriteBytesExt, ReadBytesExt};
-use diesel::{serialize::{Output, self, IsNull}, pg::Pg, deserialize};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
+use diesel::{
+    deserialize,
+    pg::Pg,
+    serialize::{self, IsNull, Output},
+};
 
 #[derive(Debug, PartialEq)]
 pub enum GeometryType {
@@ -42,7 +46,11 @@ pub trait EwkbSerializable {
     fn geometry_type(&self) -> u32;
 }
 
-pub fn write_ewkb_header<T>(geometry: &T, srid: Option<u32>, out: &mut Output<Pg>) -> serialize::Result
+pub fn write_ewkb_header<T>(
+    geometry: &T,
+    srid: Option<u32>,
+    out: &mut Output<Pg>,
+) -> serialize::Result
 where
     T: EwkbSerializable,
 {
@@ -64,13 +72,21 @@ pub struct EwkbHeader {
     pub srid: Option<u32>,
 }
 
-pub fn read_ewkb_header<T>(expected_type: GeometryType, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<EwkbHeader>
+pub fn read_ewkb_header<T>(
+    expected_type: GeometryType,
+    cursor: &mut Cursor<&[u8]>,
+) -> deserialize::Result<EwkbHeader>
 where
-    T: byteorder::ByteOrder
+    T: byteorder::ByteOrder,
 {
     let g_type = cursor.read_u32::<T>()?;
     if GeometryType::from(g_type) != expected_type {
-        return Err(format!("Geometry {:?} is not a {:?}", GeometryType::from(g_type), expected_type).into());
+        return Err(format!(
+            "Geometry {:?} is not a {:?}",
+            GeometryType::from(g_type),
+            expected_type
+        )
+        .into());
     }
     let mut srid = None;
     // SRID included

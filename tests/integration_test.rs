@@ -193,11 +193,16 @@ fn new_geometry_collection() -> GeometryCollection<Point> {
             points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
             srid: Some(4326),
         }));
-    gc.geometries.push(GeometryContainer::MultiLineString(multiline));
-    gc.geometries.push(GeometryContainer::MultiPolygon(multipolygon));
+    gc.geometries
+        .push(GeometryContainer::MultiLineString(multiline));
+    gc.geometries
+        .push(GeometryContainer::MultiPolygon(multipolygon));
     let mut inner_gc = GeometryCollection::new(Some(4326));
-    inner_gc.geometries.push(GeometryContainer::Point(new_point(74.0, 64.0)));
-    gc.geometries.push(GeometryContainer::GeometryCollection(inner_gc));
+    inner_gc
+        .geometries
+        .push(GeometryContainer::Point(new_point(74.0, 64.0)));
+    gc.geometries
+        .push(GeometryContainer::GeometryCollection(inner_gc));
     gc
 }
 

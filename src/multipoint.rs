@@ -3,7 +3,8 @@ use std::io::Cursor;
 
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
-    points::{write_point, Dimension}, types::*,
+    points::{write_point, Dimension},
+    types::*,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
@@ -12,7 +13,7 @@ use diesel::{
     serialize::{self, IsNull, Output, ToSql},
 };
 
-use crate::points::{read_point_coordinates};
+use crate::points::read_point_coordinates;
 use crate::sql_types::*;
 
 impl<T> MultiPoint<T>
@@ -91,7 +92,11 @@ where
     read_multi_point_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 
-pub fn read_multi_point_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<MultiPoint<P>>
+pub fn read_multi_point_body<T, P>(
+    g_type: u32,
+    srid: Option<u32>,
+    cursor: &mut Cursor<&[u8]>,
+) -> deserialize::Result<MultiPoint<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
@@ -102,11 +107,7 @@ where
         // skip 1 byte for byte order and 4 bytes for point type
         cursor.read_u8()?;
         cursor.read_u32::<T>()?;
-        points.push(read_point_coordinates::<T, P>(
-            cursor,
-            g_type,
-            srid,
-        )?);
+        points.push(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
     }
     Ok(MultiPoint {
         points: points,

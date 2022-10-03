@@ -37,9 +37,11 @@ impl std::error::Error for PointConstructorError {}
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Point {
     pub x: f64,
     pub y: f64,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
@@ -55,10 +57,12 @@ pub struct Point {
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PointZ {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
@@ -74,10 +78,12 @@ pub struct PointZ {
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PointM {
     pub x: f64,
     pub y: f64,
     pub m: f64,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
@@ -93,11 +99,13 @@ pub struct PointM {
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PointZM {
     pub x: f64,
     pub y: f64,
     pub z: f64,
     pub m: f64,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
@@ -131,8 +139,10 @@ pub trait PointT {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MultiPoint<T> {
     pub points: Vec<T>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
@@ -148,8 +158,10 @@ pub struct MultiPoint<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct LineString<T> {
     pub points: Vec<T>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
@@ -165,8 +177,10 @@ pub struct LineString<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MultiLineString<T> {
     pub lines: Vec<LineString<T>>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
@@ -182,8 +196,10 @@ pub struct MultiLineString<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Polygon<T> {
     pub rings: Vec<Vec<T>>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
@@ -199,12 +215,15 @@ pub struct Polygon<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MultiPolygon<T> {
     pub polygons: Vec<Polygon<T>>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
 }
 
 #[derive(Clone, Debug, PartialEq, FromSqlRow)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum GeometryContainer<T> {
     Point(T),
     LineString(LineString<T>),
@@ -227,7 +246,26 @@ pub enum GeometryContainer<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GeometryCollection<T> {
     pub geometries: Vec<GeometryContainer<T>>,
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
+}
+
+#[cfg(test)]
+#[cfg(feature = "serde")]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_point_serde() {
+        let point = Point::new(72.0, 64.0, None);
+        let expected_point = "{\"x\":72.0,\"y\":64.0}";
+        let point_from_json = serde_json::from_str(expected_point).unwrap();
+        assert_eq!(point, point_from_json);
+        let point_json = serde_json::to_string(&point).unwrap();
+        assert_eq!(expected_point, point_json);
+    }
 }

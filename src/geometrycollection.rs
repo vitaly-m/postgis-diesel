@@ -8,7 +8,8 @@ use crate::{
     multipoint::{read_multi_point_body, write_multi_point},
     multipolygon::{read_multi_polygon_body, write_multi_polygon},
     points::{read_point_coordinates, write_point, Dimension},
-    polygon::*, types::*,
+    polygon::*,
+    types::*,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
@@ -144,20 +145,18 @@ where
         cursor.read_u8()?;
         let geom_type = GeometryType::from(cursor.read_u32::<T>()?);
         let g_container = match geom_type {
-            GeometryType::Point => GeometryContainer::Point(read_point_coordinates::<T, P>(
-                cursor,
-                g_type,
-                srid,
-            )?),
-            GeometryType::LineString => GeometryContainer::LineString(
-                read_linestring_body::<T, P>(g_type, srid, cursor)?,
-            ),
+            GeometryType::Point => {
+                GeometryContainer::Point(read_point_coordinates::<T, P>(cursor, g_type, srid)?)
+            }
+            GeometryType::LineString => {
+                GeometryContainer::LineString(read_linestring_body::<T, P>(g_type, srid, cursor)?)
+            }
             GeometryType::Polygon => {
                 GeometryContainer::Polygon(read_polygon_body::<T, P>(g_type, srid, cursor)?)
             }
-            GeometryType::MultiPoint => GeometryContainer::MultiPoint(
-                read_multi_point_body::<T, P>(g_type, srid, cursor)?,
-            ),
+            GeometryType::MultiPoint => {
+                GeometryContainer::MultiPoint(read_multi_point_body::<T, P>(g_type, srid, cursor)?)
+            }
             GeometryType::MultiLineString => GeometryContainer::MultiLineString(
                 read_multiline_body::<T, P>(g_type, srid, cursor)?,
             ),

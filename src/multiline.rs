@@ -11,10 +11,11 @@ use diesel::{
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
     linestring::write_linestring,
-    points::Dimension, types::{LineString, MultiLineString, PointT},
+    points::Dimension,
+    types::{LineString, MultiLineString, PointT},
 };
 
-use crate::points::{read_point_coordinates};
+use crate::points::read_point_coordinates;
 use crate::sql_types::*;
 
 impl<T> MultiLineString<T>
@@ -44,7 +45,7 @@ where
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: &[T])  -> &mut Self{
+    pub fn add_points<'a>(&'a mut self, points: &[T]) -> &mut Self {
         if self.lines.last().is_none() {
             self.add_line();
         }
@@ -127,7 +128,11 @@ where
     read_multiline_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 
-pub fn read_multiline_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<MultiLineString<P>>
+pub fn read_multiline_body<T, P>(
+    g_type: u32,
+    srid: Option<u32>,
+    cursor: &mut Cursor<&[u8]>,
+) -> deserialize::Result<MultiLineString<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
@@ -141,11 +146,7 @@ where
         cursor.read_u32::<T>()?;
         let points_n = cursor.read_u32::<T>()?;
         for _p in 0..points_n {
-            multiline.add_point(read_point_coordinates::<T, P>(
-                cursor,
-                g_type,
-                srid,
-            )?);
+            multiline.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
         }
     }
     Ok(multiline)

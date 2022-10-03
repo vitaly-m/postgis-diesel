@@ -126,7 +126,11 @@ where
     read_multi_polygon_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 
-pub fn read_multi_polygon_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<MultiPolygon<P>>
+pub fn read_multi_polygon_body<T, P>(
+    g_type: u32,
+    srid: Option<u32>,
+    cursor: &mut Cursor<&[u8]>,
+) -> deserialize::Result<MultiPolygon<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,

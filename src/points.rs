@@ -45,25 +45,25 @@ impl EwkbSerializable for PointZM {
 }
 
 impl Point {
-    pub fn new(x: f64, y:f64, srid: Option<u32>) -> Self {
+    pub fn new(x: f64, y: f64, srid: Option<u32>) -> Self {
         Self { x, y, srid }
     }
 }
 
 impl PointZ {
-    pub fn new(x: f64, y:f64, z:f64, srid: Option<u32>) -> Self {
+    pub fn new(x: f64, y: f64, z: f64, srid: Option<u32>) -> Self {
         Self { x, y, z, srid }
     }
 }
 
 impl PointM {
-    pub fn new(x: f64, y:f64, m:f64, srid: Option<u32>) -> Self {
+    pub fn new(x: f64, y: f64, m: f64, srid: Option<u32>) -> Self {
         Self { x, y, m, srid }
     }
 }
 
 impl PointZM {
-    pub fn new(x: f64, y:f64, z:f64, m:f64, srid: Option<u32>) -> Self {
+    pub fn new(x: f64, y: f64, z: f64, m: f64, srid: Option<u32>) -> Self {
         Self { x, y, z, m, srid }
     }
 }

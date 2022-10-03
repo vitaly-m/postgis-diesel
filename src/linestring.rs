@@ -8,11 +8,12 @@ use diesel::{
     serialize::{self, IsNull, Output, ToSql},
 };
 
-use crate::{ewkb::{
-    read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN,
-}, types::{LineString, PointT}};
 use crate::points::{read_point_coordinates, write_point_coordinates, Dimension};
 use crate::sql_types::*;
+use crate::{
+    ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    types::{LineString, PointT},
+};
 
 impl<T> EwkbSerializable for LineString<T>
 where
@@ -86,7 +87,11 @@ where
     read_linestring_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 
-pub fn read_linestring_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<LineString<P>>
+pub fn read_linestring_body<T, P>(
+    g_type: u32,
+    srid: Option<u32>,
+    cursor: &mut Cursor<&[u8]>,
+) -> deserialize::Result<LineString<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
@@ -94,11 +99,7 @@ where
     let len = cursor.read_u32::<T>()?;
     let mut points = Vec::with_capacity(len as usize);
     for _i in 0..len {
-        points.push(read_point_coordinates::<T, P>(
-            cursor,
-            g_type,
-            srid,
-        )?);
+        points.push(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
     }
     Ok(LineString {
         points: points,

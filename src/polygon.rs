@@ -8,9 +8,10 @@ use diesel::{
     serialize::{self, IsNull, Output, ToSql},
 };
 
-use crate::{ewkb::{
-    read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN,
-}, types::{Polygon, PointT}};
+use crate::{
+    ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    types::{PointT, Polygon},
+};
 
 use crate::points::{read_point_coordinates, write_point_coordinates, Dimension};
 use crate::sql_types::*;
@@ -124,7 +125,11 @@ where
     read_polygon_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 
-pub fn read_polygon_body<T, P>(g_type: u32, srid: Option<u32>, cursor: &mut Cursor<&[u8]>) -> deserialize::Result<Polygon<P>>
+pub fn read_polygon_body<T, P>(
+    g_type: u32,
+    srid: Option<u32>,
+    cursor: &mut Cursor<&[u8]>,
+) -> deserialize::Result<Polygon<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
@@ -135,11 +140,7 @@ where
         polygon.add_ring();
         let points_n = cursor.read_u32::<T>()?;
         for _p in 0..points_n {
-            polygon.add_point(read_point_coordinates::<T, P>(
-                cursor,
-                g_type,
-                srid,
-            )?);
+            polygon.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
         }
     }
     Ok(polygon)

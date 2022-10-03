@@ -1,5 +1,8 @@
 #[macro_use]
 extern crate diesel;
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde;
 
 mod ewkb;
 mod geometrycollection;
