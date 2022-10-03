@@ -26,18 +26,20 @@ where
         }
     }
 
-    pub fn add_ring<'a>(&'a mut self) {
+    pub fn add_ring<'a>(&'a mut self) -> &mut Self {
         self.rings.push(Vec::new());
+        self
     }
 
-    pub fn add_point<'a>(&'a mut self, point: T) {
+    pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
         if self.rings.last().is_none() {
             self.add_ring();
         }
         self.rings.last_mut().unwrap().push(point);
+        self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: &[T]) {
+    pub fn add_points<'a>(&'a mut self, points: &[T]) -> &mut Self {
         if self.rings.last().is_none() {
             self.add_ring();
         }
@@ -45,6 +47,7 @@ where
         for point in points {
             last.push(point.to_owned());
         }
+        self
     }
 
     pub fn dimension(&self) -> u32 {

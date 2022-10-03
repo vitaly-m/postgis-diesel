@@ -28,21 +28,23 @@ where
         }
     }
 
-    pub fn add_line<'a>(&'a mut self) {
+    pub fn add_line<'a>(&'a mut self) -> &mut Self {
         self.lines.push(LineString {
             points: Vec::new(),
             srid: self.srid,
         });
+        self
     }
 
-    pub fn add_point<'a>(&'a mut self, point: T) {
+    pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
         if self.lines.last().is_none() {
             self.add_line();
         }
         self.lines.last_mut().unwrap().points.push(point);
+        self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: &[T]) {
+    pub fn add_points<'a>(&'a mut self, points: &[T])  -> &mut Self{
         if self.lines.last().is_none() {
             self.add_line();
         }
@@ -50,6 +52,7 @@ where
         for point in points {
             last.points.push(point.to_owned());
         }
+        self
     }
 
     pub fn dimension(&self) -> u32 {

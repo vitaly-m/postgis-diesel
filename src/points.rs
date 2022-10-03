@@ -44,6 +44,30 @@ impl EwkbSerializable for PointZM {
     }
 }
 
+impl Point {
+    pub fn new(x: f64, y:f64, srid: Option<u32>) -> Self {
+        Self { x, y, srid }
+    }
+}
+
+impl PointZ {
+    pub fn new(x: f64, y:f64, z:f64, srid: Option<u32>) -> Self {
+        Self { x, y, z, srid }
+    }
+}
+
+impl PointM {
+    pub fn new(x: f64, y:f64, m:f64, srid: Option<u32>) -> Self {
+        Self { x, y, m, srid }
+    }
+}
+
+impl PointZM {
+    pub fn new(x: f64, y:f64, z:f64, m:f64, srid: Option<u32>) -> Self {
+        Self { x, y, z, m, srid }
+    }
+}
+
 impl PointT for Point {
     fn get_x(&self) -> f64 {
         self.x
@@ -78,7 +102,7 @@ impl PointT for Point {
     ) -> Result<Self, PointConstructorError> {
         if z.is_some() || m.is_some() {
             return Err(PointConstructorError {
-                reason: format!("unexpectedly defined z {:?} or m {:?} for Point", z, m)
+                reason: format!("unexpectedly defined Z {:?} or M {:?} for Point", z, m)
                     .to_string(),
             });
         }

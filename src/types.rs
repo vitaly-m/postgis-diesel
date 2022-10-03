@@ -2,8 +2,17 @@ use std::fmt;
 
 use crate::sql_types::Geometry;
 
-
-#[derive(Debug, Clone)]
+/// Error which may be returned if point cinstructed without required fields or has some unexpected fields for type.
+/// ```
+/// use postgis_diesel::types::{PointT, PointZ, Point, PointConstructorError};
+/// let point = PointZ::new_point(72.0, 63.0, None, None, None);
+/// assert!(point.is_err());
+/// assert_eq!(Result::Err(PointConstructorError{reason:"Z is not defined, but mandatory for PointZ".to_string()}), point);
+/// let point = Point::new_point(72.0, 63.0, None, Some(10.0), None);
+/// assert!(point.is_err());
+/// assert_eq!(Result::Err(PointConstructorError{reason:"unexpectedly defined Z Some(10.0) or M None for Point".to_string()}), point);
+/// ```
+#[derive(Debug, Clone, PartialEq)]
 pub struct PointConstructorError {
     pub reason: String,
 }
@@ -16,6 +25,16 @@ impl fmt::Display for PointConstructorError {
 
 impl std::error::Error for PointConstructorError {}
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with Point geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::Point;
+/// #[derive(Queryable)]
+/// struct QueryablePointExample {
+///     id: i32,
+///     point: Point,
+/// }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct Point {
@@ -24,6 +43,16 @@ pub struct Point {
     pub srid: Option<u32>,
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with PointZ geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::PointZ;
+/// #[derive(Queryable)]
+/// struct QueryablePointZExample {
+///     id: i32,
+///     point: PointZ,
+/// }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct PointZ {
@@ -33,6 +62,16 @@ pub struct PointZ {
     pub srid: Option<u32>,
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with PointM geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::PointM;
+/// #[derive(Queryable)]
+/// struct QueryablePointMExample {
+///     id: i32,
+///     point: PointM,
+/// }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct PointM {
@@ -42,6 +81,16 @@ pub struct PointM {
     pub srid: Option<u32>,
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with PointZM geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::PointZM;
+/// #[derive(Queryable)]
+/// struct QueryablePointZMExample {
+///     id: i32,
+///     point: PointZM,
+/// }
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct PointZM {
@@ -70,6 +119,16 @@ pub trait PointT {
     fn dimension(&self) -> u32;
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with MultiPoint geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::{MultiPoint,Point};
+/// #[derive(Queryable)]
+/// struct QueryableMultiPointExample {
+///     id: i32,
+///     multipoint: MultiPoint<Point>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct MultiPoint<T> {
@@ -77,6 +136,16 @@ pub struct MultiPoint<T> {
     pub srid: Option<u32>,
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with LineString geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::{LineString,Point};
+/// #[derive(Queryable)]
+/// struct QueryableLineStringExample {
+///     id: i32,
+///     linestring: LineString<Point>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct LineString<T> {
@@ -84,6 +153,16 @@ pub struct LineString<T> {
     pub srid: Option<u32>,
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with MultiLineString geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::{MultiLineString, LineString,Point};
+/// #[derive(Queryable)]
+/// struct QueryableMultiLineStringExample {
+///     id: i32,
+///     multilinestring: MultiLineString<LineString<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct MultiLineString<T> {
@@ -91,6 +170,16 @@ pub struct MultiLineString<T> {
     pub srid: Option<u32>,
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with Polygon geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::{Polygon,Point};
+/// #[derive(Queryable)]
+/// struct QueryablePolygonExample {
+///     id: i32,
+///     polygon: Polygon<Point>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct Polygon<T> {
@@ -98,13 +187,22 @@ pub struct Polygon<T> {
     pub srid: Option<u32>,
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with MultiPolygon geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::{MultiPolygon, Polygon,Point};
+/// #[derive(Queryable)]
+/// struct QueryableMultiPolygonExample {
+///     id: i32,
+///     multipolygon: MultiPolygon<Polygon<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct MultiPolygon<T> {
     pub polygons: Vec<Polygon<T>>,
     pub srid: Option<u32>,
 }
-
 
 #[derive(Clone, Debug, PartialEq, FromSqlRow)]
 pub enum GeometryContainer<T> {
@@ -117,6 +215,16 @@ pub enum GeometryContainer<T> {
     GeometryCollection(GeometryCollection<T>),
 }
 
+/// Use that structure in `Insertable` or `Queryable` struct if you work with GeometryCollection geometry.
+/// ```
+/// #[macro_use] extern crate diesel;
+/// use postgis_diesel::types::{GeometryCollection, GeometryContainer, Point};
+/// #[derive(Queryable)]
+/// struct QueryableGeometryCollectionExample {
+///     id: i32,
+///     geometrycollection: GeometryCollection<GeometryContainer<Point>>,
+/// }
+/// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
 pub struct GeometryCollection<T> {

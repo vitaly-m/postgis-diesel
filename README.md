@@ -1,6 +1,5 @@
 # PostGIS Diesel
 Extension for Diesel framework to support PostGIS types. 
-The library is simple extension of [rust-postgis]
 
 # Example of Usage
 To ensure that the `Geometry` type is in scope, read [this guide] and add use `postgis_diesel::sql_types::*` 
@@ -19,18 +18,24 @@ CREATE TABLE geometry_samples
 
 Then Rust code may look like this:
 ```rust
+#[macro_use]
+extern crate diesel;
+
+use postgis_diesel::operators::*;
+use postgis_diesel::types::*;
+
 #[derive(Insertable)]
-#[table_name = "geometry_samples"]
+#[diesel(table_name = geometry_samples)]
 struct NewGeometrySample {
-    point: PointC<Point>,
-    linestring: LineStringC<LineStringT<Point>>,
+    point: Point,
+    linestring: LineString<Point>,
 }
 
 #[derive(Queryable)]
 struct GeometrySample {
     id: i32,
-    point: PointC<Point>,
-    linestring: LineStringC<LineStringT<Point>>,
+    point: Point,
+    linestring: LineString<Point>,
 }
 
 table! {
@@ -43,7 +48,6 @@ table! {
     }
 }
 ```
-
-[rust-postgis]: https://github.com/andelf/rust-postgis
+See [intergation test](tests/integration_test.rs) for more complete example.
 
 [this guide]: http://diesel.rs/guides/configuring-diesel-cli/
