@@ -1,7 +1,8 @@
-use std::{fmt, io::Cursor};
+use std::io::Cursor;
 
-use crate::ewkb::{
-    read_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN,
+use crate::{
+    ewkb::{read_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    types::*,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
@@ -17,73 +18,6 @@ pub enum Dimension {
     Z = 0x80000000,
     M = 0x40000000,
     ZM = 0x40000000 | 0x80000000,
-}
-
-#[derive(Debug, Clone)]
-pub struct PointConstructorError {
-    reason: String,
-}
-
-impl fmt::Display for PointConstructorError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "can't construct point: {}", self.reason)
-    }
-}
-
-impl std::error::Error for PointConstructorError {}
-
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-    pub srid: Option<u32>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct PointZ {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-    pub srid: Option<u32>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct PointM {
-    pub x: f64,
-    pub y: f64,
-    pub m: f64,
-    pub srid: Option<u32>,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct PointZM {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
-    pub m: f64,
-    pub srid: Option<u32>,
-}
-
-pub trait PointT {
-    fn new_point(
-        x: f64,
-        y: f64,
-        srid: Option<u32>,
-        z: Option<f64>,
-        m: Option<f64>,
-    ) -> Result<Self, PointConstructorError>
-    where
-        Self: Sized;
-    fn get_x(&self) -> f64;
-    fn get_y(&self) -> f64;
-    fn get_srid(&self) -> Option<u32>;
-    fn get_z(&self) -> Option<f64>;
-    fn get_m(&self) -> Option<f64>;
-    fn dimension(&self) -> u32;
 }
 
 impl EwkbSerializable for Point {

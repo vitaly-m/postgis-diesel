@@ -5,6 +5,7 @@ use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
     points::Dimension,
     polygon::{read_polygon_body, write_polygon},
+    types::*,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
@@ -14,14 +15,6 @@ use diesel::{
 };
 
 use crate::sql_types::*;
-use crate::{points::PointT, polygon::Polygon};
-
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct MultiPolygon<T> {
-    pub polygons: Vec<Polygon<T>>,
-    pub srid: Option<u32>,
-}
 
 impl<T> MultiPolygon<T>
 where

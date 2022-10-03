@@ -10,14 +10,8 @@ use diesel::Connection;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use dotenv::dotenv;
 
-use postgis_diesel::geometrycollection::{GeometryCollection, GeometryContainer};
-use postgis_diesel::linestring::*;
-use postgis_diesel::multiline::*;
-use postgis_diesel::multipoint::*;
-use postgis_diesel::multipolygon::*;
 use postgis_diesel::operators::*;
-use postgis_diesel::points::*;
-use postgis_diesel::polygon::*;
+use postgis_diesel::types::*;
 
 static INIT: Once = Once::new();
 

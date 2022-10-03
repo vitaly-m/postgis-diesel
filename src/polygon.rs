@@ -8,19 +8,12 @@ use diesel::{
     serialize::{self, IsNull, Output, ToSql},
 };
 
-use crate::ewkb::{
+use crate::{ewkb::{
     read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN,
-};
+}, types::{Polygon, PointT}};
 
-use crate::points::{read_point_coordinates, write_point_coordinates, Dimension, PointT};
+use crate::points::{read_point_coordinates, write_point_coordinates, Dimension};
 use crate::sql_types::*;
-
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct Polygon<T> {
-    pub rings: Vec<Vec<T>>,
-    pub srid: Option<u32>,
-}
 
 impl<T> Polygon<T>
 where

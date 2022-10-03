@@ -3,7 +3,7 @@ use std::io::Cursor;
 
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
-    points::{write_point, Dimension},
+    points::{write_point, Dimension}, types::*,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
@@ -12,15 +12,8 @@ use diesel::{
     serialize::{self, IsNull, Output, ToSql},
 };
 
-use crate::points::{read_point_coordinates, PointT};
+use crate::points::{read_point_coordinates};
 use crate::sql_types::*;
-
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct MultiPoint<T> {
-    pub points: Vec<T>,
-    pub srid: Option<u32>,
-}
 
 impl<T> MultiPoint<T>
 where

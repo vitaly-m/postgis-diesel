@@ -3,12 +3,12 @@ use std::io::Cursor;
 
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
-    linestring::{read_linestring_body, write_linestring, LineString},
-    multiline::{read_multiline_body, write_multiline, MultiLineString},
-    multipoint::{read_multi_point_body, write_multi_point, MultiPoint},
-    multipolygon::{read_multi_polygon_body, write_multi_polygon, MultiPolygon},
+    linestring::{read_linestring_body, write_linestring},
+    multiline::{read_multiline_body, write_multiline},
+    multipoint::{read_multi_point_body, write_multi_point},
+    multipolygon::{read_multi_polygon_body, write_multi_polygon},
     points::{read_point_coordinates, write_point, Dimension},
-    polygon::*,
+    polygon::*, types::*,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use diesel::{
@@ -18,18 +18,6 @@ use diesel::{
 };
 
 use crate::sql_types::*;
-use crate::{points::PointT, polygon::Polygon};
-
-#[derive(Clone, Debug, PartialEq, FromSqlRow)]
-pub enum GeometryContainer<T> {
-    Point(T),
-    LineString(LineString<T>),
-    Polygon(Polygon<T>),
-    MultiPoint(MultiPoint<T>),
-    MultiLineString(MultiLineString<T>),
-    MultiPolygon(MultiPolygon<T>),
-    GeometryCollection(GeometryCollection<T>),
-}
 
 impl<T> GeometryContainer<T>
 where
@@ -46,13 +34,6 @@ where
             GeometryContainer::GeometryCollection(g) => g.dimension(),
         }
     }
-}
-
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct GeometryCollection<T> {
-    pub geometries: Vec<GeometryContainer<T>>,
-    pub srid: Option<u32>,
 }
 
 impl<T> GeometryCollection<T>

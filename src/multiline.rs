@@ -11,19 +11,11 @@ use diesel::{
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
     linestring::write_linestring,
-    points::Dimension,
+    points::Dimension, types::{LineString, MultiLineString, PointT},
 };
 
-use crate::linestring::LineString;
-use crate::points::{read_point_coordinates, PointT};
+use crate::points::{read_point_coordinates};
 use crate::sql_types::*;
-
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-pub struct MultiLineString<T> {
-    pub lines: Vec<LineString<T>>,
-    pub srid: Option<u32>,
-}
 
 impl<T> MultiLineString<T>
 where
