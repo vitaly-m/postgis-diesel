@@ -16,6 +16,12 @@ diesel::infix_operator!(BBStrictlyAbove, " |>> ");
 diesel::infix_operator!(BBContains, " ~ ");
 diesel::infix_operator!(BBSame, " ~= ");
 
+diesel::infix_operator!(Distance2d, " <-> ");
+diesel::infix_operator!(Distance3dTrajectories, " <-> ");
+diesel::infix_operator!(Distance2BBs, " <#> ");
+diesel::infix_operator!(DistanceNdCentroidsBBs, " <<->> ");
+diesel::infix_operator!(DistanceNdBBs, " <<#>> ");
+
 /// The @ operator returns TRUE if the bounding box of geometry A is completely contained by the bounding box of geometry B.
 pub fn contained_by<T, U>(left: T, right: U) -> BBContainedBy<T, U::Expression>
 where
@@ -144,4 +150,54 @@ where
     U: AsExpression<T::SqlType>,
 {
     BBSame::new(left, right.as_expression())
+}
+
+/// The <-> operator returns the 2D distance between A and B.
+pub fn distance_2d<T, U>(left: T, right: U) -> Distance2d<T, U::Expression>
+where
+    T: Expression,
+    <T as diesel::Expression>::SqlType: SqlType,
+    U: AsExpression<T::SqlType>,
+{
+    Distance2d::new(left, right.as_expression())
+}
+
+/// The |=| operator returns the 3D distance between two trajectories.
+pub fn distance_3d_trajectories<T, U>(left: T, right: U) -> Distance3dTrajectories<T, U::Expression>
+where
+    T: Expression,
+    <T as diesel::Expression>::SqlType: SqlType,
+    U: AsExpression<T::SqlType>,
+{
+    Distance3dTrajectories::new(left, right.as_expression())
+}
+
+/// The <#> operator returns the 2D distance between A and B bounding boxes.
+pub fn distance_2d_bbs<T, U>(left: T, right: U) -> Distance2BBs<T, U::Expression>
+where
+    T: Expression,
+    <T as diesel::Expression>::SqlType: SqlType,
+    U: AsExpression<T::SqlType>,
+{
+    Distance2BBs::new(left, right.as_expression())
+}
+
+/// The <<->> operator returns the n-D distance between the centroids of A and B bounding boxes.
+pub fn distance_nd_centroids_bbs<T, U>(left: T, right: U) -> DistanceNdCentroidsBBs<T, U::Expression>
+where
+    T: Expression,
+    <T as diesel::Expression>::SqlType: SqlType,
+    U: AsExpression<T::SqlType>,
+{
+    DistanceNdCentroidsBBs::new(left, right.as_expression())
+}
+
+/// The <<#>> operator returns the n-D distance between A and B bounding boxes.
+pub fn distance_nd_bbs<T, U>(left: T, right: U) -> DistanceNdBBs<T, U::Expression>
+where
+    T: Expression,
+    <T as diesel::Expression>::SqlType: SqlType,
+    U: AsExpression<T::SqlType>,
+{
+    DistanceNdBBs::new(left, right.as_expression())
 }
