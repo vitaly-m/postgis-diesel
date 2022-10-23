@@ -5,8 +5,7 @@ use std::env;
 use std::sync::Once;
 
 // use diesel::query_dsl::filter_dsl::FilterDsl;
-use diesel::pg::{Pg, PgConnection};
-use diesel::query_builder::DebugQuery;
+use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use dotenv::dotenv;
