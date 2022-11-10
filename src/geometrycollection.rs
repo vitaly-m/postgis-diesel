@@ -79,6 +79,15 @@ where
     }
 }
 
+impl<T> ToSql<Geography, Pg> for GeometryCollection<T>
+where
+    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
+{
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+        write_geometry_collection(self, self.srid, out)
+    }
+}
+
 impl<T> FromSql<Geometry, Pg> for GeometryCollection<T>
 where
     T: PointT + Debug + Clone,
@@ -91,6 +100,15 @@ where
         } else {
             read_geometry_collection::<LittleEndian, T>(&mut r)
         }
+    }
+}
+
+impl<T> FromSql<Geography, Pg> for GeometryCollection<T>
+where
+    T: PointT + Debug + Clone,
+{
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+        FromSql::<Geometry, Pg>::from_sql(bytes)
     }
 }
 

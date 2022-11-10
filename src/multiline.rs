@@ -87,6 +87,15 @@ where
     }
 }
 
+impl<T> ToSql<Geography, Pg> for MultiLineString<T>
+where
+    T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
+{
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+        write_multiline(self, self.srid, out)
+    }
+}
+
 impl<T> FromSql<Geometry, Pg> for MultiLineString<T>
 where
     T: PointT + Debug + Clone,
@@ -99,6 +108,15 @@ where
         } else {
             read_multiline::<LittleEndian, T>(&mut r)
         }
+    }
+}
+
+impl<T> FromSql<Geography, Pg> for MultiLineString<T>
+where
+    T: PointT + Debug + Clone,
+{
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+        FromSql::<Geometry, Pg>::from_sql(bytes)
     }
 }
 

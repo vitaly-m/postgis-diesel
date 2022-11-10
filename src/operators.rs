@@ -183,7 +183,10 @@ where
 }
 
 /// The <<->> operator returns the n-D distance between the centroids of A and B bounding boxes.
-pub fn distance_nd_centroids_bbs<T, U>(left: T, right: U) -> DistanceNdCentroidsBBs<T, U::Expression>
+pub fn distance_nd_centroids_bbs<T, U>(
+    left: T,
+    right: U,
+) -> DistanceNdCentroidsBBs<T, U::Expression>
 where
     T: Expression,
     <T as diesel::Expression>::SqlType: SqlType,
