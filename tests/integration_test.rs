@@ -263,7 +263,7 @@ fn new_point_zm(x: f64, y: f64, z: f64, m: f64) -> PointZM {
 
 fn new_geometry_collection() -> GeometryCollection<Point> {
     let mut polygon = Polygon::new(Some(4326));
-    polygon.add_points(&vec![
+    polygon.add_points([
         new_point(72.0, 64.0),
         new_point(73.0, 65.0),
         new_point(71.0, 62.0),
@@ -320,7 +320,7 @@ fn new_geometry_collection() -> GeometryCollection<Point> {
 fn smoke_test() {
     let mut conn = initialize();
     let mut polygon = Polygon::new(Some(4326));
-    polygon.add_points(&vec![
+    polygon.add_points([
         new_point(72.0, 64.0),
         new_point(73.0, 65.0),
         new_point(71.0, 62.0),
@@ -388,7 +388,7 @@ fn smoke_test() {
 fn geography_smoke_test() {
     let mut conn = initialize();
     let mut polygon = Polygon::new(Some(4326));
-    polygon.add_points(&vec![
+    polygon.add_points([
         new_point(72.0, 64.0),
         new_point(73.0, 65.0),
         new_point(71.0, 62.0),
@@ -526,7 +526,7 @@ macro_rules! operator_test {
         fn $t() {
             let mut conn = initialize();
             let mut polygon = Polygon::new(Some(4326));
-            polygon.add_points(&vec![
+            polygon.add_points([
                 new_point(72.0, 64.0),
                 new_point(73.0, 65.0),
                 new_point(71.0, 62.0),
