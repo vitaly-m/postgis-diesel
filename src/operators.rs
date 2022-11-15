@@ -1,6 +1,7 @@
 use diesel::expression::AsExpression;
 use diesel::sql_types::SqlType;
 use diesel::Expression;
+use crate::sql_types::Geography;
 
 diesel::infix_operator!(BBIntersects2D, " && ");
 diesel::infix_operator!(BBOverlapsOrLeft, " &< ");
@@ -21,6 +22,14 @@ diesel::infix_operator!(Distance3dTrajectories, " <-> ");
 diesel::infix_operator!(Distance2BBs, " <#> ");
 diesel::infix_operator!(DistanceNdCentroidsBBs, " <<->> ");
 diesel::infix_operator!(DistanceNdBBs, " <<#>> ");
+
+sql_function! {
+    /// ST_Intersects returns TRUE iff the intersection of the geometries or geographies is non-empty.
+    /// 
+    /// It is much faster than computing said intersection.
+    fn st_intersects(left: Geography, right: Geography) -> Bool;
+}
+pub type StIntersects<ExprLeft, ExprRight> = st_intersects::HelperType<ExprLeft, ExprRight>;
 
 /// The @ operator returns TRUE if the bounding box of geometry A is completely contained by the bounding box of geometry B.
 pub fn contained_by<T, U>(left: T, right: U) -> BBContainedBy<T, U::Expression>
