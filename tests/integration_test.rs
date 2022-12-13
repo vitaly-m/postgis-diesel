@@ -270,20 +270,20 @@ fn new_geometry_collection() -> GeometryCollection<Point> {
         new_point(72.0, 64.0),
     ]);
     let mut multiline = MultiLineString::new(Some(4326));
-    multiline.add_points(&vec![new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+    multiline.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
     multiline.add_line();
-    multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+    multiline.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
     let mut multipolygon = MultiPolygon::new(Some(4326));
     multipolygon
         .add_empty_polygon()
-        .add_points(&vec![
+        .add_points([
             new_point(72.0, 64.0),
             new_point(73.0, 65.0),
             new_point(71.0, 62.0),
             new_point(72.0, 64.0),
         ])
         .add_empty_polygon()
-        .add_points(&vec![
+        .add_points([
             new_point(75.0, 64.0),
             new_point(74.0, 65.0),
             new_point(74.0, 62.0),
@@ -327,20 +327,20 @@ fn smoke_test() {
         new_point(72.0, 64.0),
     ]);
     let mut multiline = MultiLineString::new(Some(4326));
-    multiline.add_points(&vec![new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+    multiline.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
     multiline.add_line();
-    multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+    multiline.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
     let mut multipolygon = MultiPolygon::new(Some(4326));
     multipolygon
         .add_empty_polygon()
-        .add_points(&vec![
+        .add_points([
             new_point(72.0, 64.0),
             new_point(73.0, 65.0),
             new_point(71.0, 62.0),
             new_point(72.0, 64.0),
         ])
         .add_empty_polygon()
-        .add_points(&vec![
+        .add_points([
             new_point(75.0, 64.0),
             new_point(74.0, 65.0),
             new_point(74.0, 62.0),
@@ -395,20 +395,20 @@ fn geography_smoke_test() {
         new_point(72.0, 64.0),
     ]);
     let mut multiline = MultiLineString::new(Some(4326));
-    multiline.add_points(&vec![new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+    multiline.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
     multiline.add_line();
-    multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+    multiline.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
     let mut multipolygon = MultiPolygon::new(Some(4326));
     multipolygon
         .add_empty_polygon()
-        .add_points(&vec![
+        .add_points([
             new_point(72.0, 64.0),
             new_point(73.0, 65.0),
             new_point(71.0, 62.0),
             new_point(72.0, 64.0),
         ])
         .add_empty_polygon()
-        .add_points(&vec![
+        .add_points([
             new_point(75.0, 64.0),
             new_point(74.0, 65.0),
             new_point(74.0, 62.0),
@@ -533,20 +533,20 @@ macro_rules! operator_test {
                 new_point(72.0, 64.0),
             ]);
             let mut multiline = MultiLineString::new(Some(4326));
-            multiline.add_points(&vec![new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+            multiline.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
             multiline.add_line();
-            multiline.add_points(&vec![new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+            multiline.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
             let mut multipolygon = MultiPolygon::new(Some(4326));
             multipolygon
                 .add_empty_polygon()
-                .add_points(&vec![
+                .add_points([
                     new_point(72.0, 64.0),
                     new_point(73.0, 65.0),
                     new_point(71.0, 62.0),
                     new_point(72.0, 64.0),
                 ])
                 .add_empty_polygon()
-                .add_points(&vec![
+                .add_points([
                     new_point(75.0, 64.0),
                     new_point(74.0, 65.0),
                     new_point(74.0, 62.0),

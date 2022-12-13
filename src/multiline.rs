@@ -45,13 +45,13 @@ where
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: &[T]) -> &mut Self {
+    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
         if self.lines.last().is_none() {
             self.add_line();
         }
         let last = self.lines.last_mut().unwrap();
         for point in points {
-            last.points.push(point.to_owned());
+            last.points.push(point);
         }
         self
     }

@@ -36,20 +36,20 @@ where
     }
 
     pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
-        if self.polygons.last().is_none() {
+        if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
         self.polygons.last_mut().unwrap().add_point(point);
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: &[T]) -> &mut Self {
-        if self.polygons.last().is_none() {
+    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+        if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
         let last = self.polygons.last_mut().unwrap();
         for point in points {
-            last.add_point(point.to_owned());
+            last.add_point(point);
         }
         self
     }
