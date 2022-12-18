@@ -1,8 +1,9 @@
 use std::fmt;
 
+use crate::sql_types::Geography;
 use crate::sql_types::Geometry;
 
-/// Error which may be returned if point cinstructed without required fields or has some unexpected fields for type.
+/// Error which may be returned if point constructed without required fields or has some unexpected fields for type.
 /// ```
 /// use postgis_diesel::types::{PointT, PointZ, Point, PointConstructorError};
 /// let point = PointZ::new_point(72.0, 63.0, None, None, None);
@@ -37,6 +38,7 @@ impl std::error::Error for PointConstructorError {}
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Point {
     pub x: f64,
@@ -57,6 +59,7 @@ pub struct Point {
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PointZ {
     pub x: f64,
@@ -78,6 +81,7 @@ pub struct PointZ {
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PointM {
     pub x: f64,
@@ -99,6 +103,7 @@ pub struct PointM {
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct PointZM {
     pub x: f64,
@@ -109,6 +114,7 @@ pub struct PointZM {
     pub srid: Option<u32>,
 }
 
+/// Allows uniform access across the four point types
 pub trait PointT {
     fn new_point(
         x: f64,
@@ -139,6 +145,7 @@ pub trait PointT {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MultiPoint<T> {
     pub points: Vec<T>,
@@ -158,6 +165,7 @@ pub struct MultiPoint<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct LineString<T> {
     pub points: Vec<T>,
@@ -177,6 +185,7 @@ pub struct LineString<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MultiLineString<T> {
     pub lines: Vec<LineString<T>>,
@@ -196,6 +205,7 @@ pub struct MultiLineString<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Polygon<T> {
     pub rings: Vec<Vec<T>>,
@@ -215,6 +225,7 @@ pub struct Polygon<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MultiPolygon<T> {
     pub polygons: Vec<Polygon<T>>,
@@ -222,6 +233,9 @@ pub struct MultiPolygon<T> {
     pub srid: Option<u32>,
 }
 
+/// Represents any type that can appear in a geometry or geography column.
+///
+/// T is the Point type (Point or PointZ or PointM)
 #[derive(Clone, Debug, PartialEq, FromSqlRow)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum GeometryContainer<T> {
@@ -246,6 +260,7 @@ pub enum GeometryContainer<T> {
 /// ```
 #[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct GeometryCollection<T> {
     pub geometries: Vec<GeometryContainer<T>>,

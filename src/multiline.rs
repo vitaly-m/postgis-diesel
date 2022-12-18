@@ -45,13 +45,13 @@ where
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: &[T]) -> &mut Self {
+    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
         if self.lines.last().is_none() {
             self.add_line();
         }
         let last = self.lines.last_mut().unwrap();
         for point in points {
-            last.points.push(point.to_owned());
+            last.points.push(point);
         }
         self
     }
@@ -87,6 +87,15 @@ where
     }
 }
 
+impl<T> ToSql<Geography, Pg> for MultiLineString<T>
+where
+    T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
+{
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+        write_multiline(self, self.srid, out)
+    }
+}
+
 impl<T> FromSql<Geometry, Pg> for MultiLineString<T>
 where
     T: PointT + Debug + Clone,
@@ -99,6 +108,15 @@ where
         } else {
             read_multiline::<LittleEndian, T>(&mut r)
         }
+    }
+}
+
+impl<T> FromSql<Geography, Pg> for MultiLineString<T>
+where
+    T: PointT + Debug + Clone,
+{
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+        FromSql::<Geometry, Pg>::from_sql(bytes)
     }
 }
 

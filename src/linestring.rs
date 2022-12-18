@@ -52,7 +52,25 @@ where
     }
 }
 
+impl<T> FromSql<Geography, Pg> for LineString<T>
+where
+    T: PointT + Debug + Clone,
+{
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+        FromSql::<Geometry, Pg>::from_sql(bytes)
+    }
+}
+
 impl<T> ToSql<Geometry, Pg> for LineString<T>
+where
+    T: PointT + Debug + EwkbSerializable,
+{
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+        write_linestring(self, self.srid, out)
+    }
+}
+
+impl<T> ToSql<Geography, Pg> for LineString<T>
 where
     T: PointT + Debug + EwkbSerializable,
 {

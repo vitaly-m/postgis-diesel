@@ -277,6 +277,32 @@ macro_rules! impl_point_from_sql {
                 }
             }
         }
+
+        impl FromSql<Geography, Pg> for $p {
+            fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+                let mut r = Cursor::new(bytes.as_bytes());
+                let end = r.read_u8()?;
+                if end == BIG_ENDIAN {
+                    read_point::<BigEndian, $p>(&mut r)
+                } else {
+                    read_point::<LittleEndian, $p>(&mut r)
+                }
+            }
+        }
+
+        impl ToSql<Geometry, Pg> for $p {
+            fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+                write_point(self, self.get_srid(), out)?;
+                Ok(IsNull::No)
+            }
+        }
+
+        impl ToSql<Geography, Pg> for $p {
+            fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+                write_point(self, self.get_srid(), out)?;
+                Ok(IsNull::No)
+            }
+        }
     };
 }
 
@@ -284,34 +310,6 @@ impl_point_from_sql!(Point);
 impl_point_from_sql!(PointZ);
 impl_point_from_sql!(PointM);
 impl_point_from_sql!(PointZM);
-
-impl ToSql<Geometry, Pg> for Point {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_point(self, self.get_srid(), out)?;
-        Ok(IsNull::No)
-    }
-}
-
-impl ToSql<Geometry, Pg> for PointZ {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_point(self, self.get_srid(), out)?;
-        Ok(IsNull::No)
-    }
-}
-
-impl ToSql<Geometry, Pg> for PointM {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_point(self, self.get_srid(), out)?;
-        Ok(IsNull::No)
-    }
-}
-
-impl ToSql<Geometry, Pg> for PointZM {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-        write_point(self, self.get_srid(), out)?;
-        Ok(IsNull::No)
-    }
-}
 
 pub fn write_point<T>(point: &T, srid: Option<u32>, out: &mut Output<Pg>) -> serialize::Result
 where

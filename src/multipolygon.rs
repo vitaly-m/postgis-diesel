@@ -36,20 +36,20 @@ where
     }
 
     pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
-        if self.polygons.last().is_none() {
+        if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
         self.polygons.last_mut().unwrap().add_point(point);
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: &[T]) -> &mut Self {
-        if self.polygons.last().is_none() {
+    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+        if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
         let last = self.polygons.last_mut().unwrap();
         for point in points {
-            last.add_point(point.to_owned());
+            last.add_point(point);
         }
         self
     }
@@ -85,6 +85,15 @@ where
     }
 }
 
+impl<T> ToSql<Geography, Pg> for MultiPolygon<T>
+where
+    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
+{
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+        write_multi_polygon(self, self.srid, out)
+    }
+}
+
 impl<T> FromSql<Geometry, Pg> for MultiPolygon<T>
 where
     T: PointT + Debug + Clone,
@@ -97,6 +106,14 @@ where
         } else {
             read_multi_polygon::<LittleEndian, T>(&mut r)
         }
+    }
+}
+impl<T> FromSql<Geography, Pg> for MultiPolygon<T>
+where
+    T: PointT + Debug + Clone,
+{
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+        FromSql::<Geometry, Pg>::from_sql(bytes)
     }
 }
 

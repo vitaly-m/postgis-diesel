@@ -40,13 +40,14 @@ where
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: &[T]) -> &mut Self {
+    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self
+    {
         if self.rings.last().is_none() {
             self.add_ring();
         }
         let last = self.rings.last_mut().unwrap();
         for point in points {
-            last.push(point.to_owned());
+            last.push(point);
         }
         self
     }
@@ -72,6 +73,15 @@ where
 }
 
 impl<T> ToSql<Geometry, Pg> for Polygon<T>
+where
+    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
+{
+    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+        write_polygon(self, self.srid, out)
+    }
+}
+
+impl<T> ToSql<Geography, Pg> for Polygon<T>
 where
     T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
 {
@@ -113,6 +123,15 @@ where
         } else {
             read_polygon::<LittleEndian, T>(&mut r)
         }
+    }
+}
+
+impl<T> FromSql<Geography, Pg> for Polygon<T>
+where
+    T: PointT + Debug + Clone,
+{
+    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+        FromSql::<Geometry, Pg>::from_sql(bytes)
     }
 }
 
