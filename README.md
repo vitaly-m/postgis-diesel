@@ -51,3 +51,14 @@ table! {
 See [integration test](tests/integration_test.rs) for more complete example.
 
 [this guide]: http://diesel.rs/guides/configuring-diesel-cli/
+
+# How to Run Tests
+
+1. Start Postgis DB 
+```sh
+docker compose up
+```
+2. Run tests
+```
+cargo test
+```

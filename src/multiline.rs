@@ -23,17 +23,22 @@ where
     T: PointT + Clone,
 {
     pub fn new(srid: Option<u32>) -> Self {
+        Self::with_capacity(srid, 0)
+    }
+
+    pub fn with_capacity(srid: Option<u32>, cap: usize) -> Self {
         MultiLineString {
-            lines: Vec::new(),
-            srid: srid,
+            lines: Vec::with_capacity(cap),
+            srid,
         }
     }
 
     pub fn add_line<'a>(&'a mut self) -> &mut Self {
-        self.lines.push(LineString {
-            points: Vec::new(),
-            srid: self.srid,
-        });
+        self.add_line_with_cap(0)
+    }
+
+    pub fn add_line_with_cap<'a>(&'a mut self, cap: usize) -> &mut Self {
+        self.lines.push(LineString::with_capacity(self.srid, cap));
         self
     }
 
@@ -41,7 +46,7 @@ where
         if self.lines.last().is_none() {
             self.add_line();
         }
-        self.lines.last_mut().unwrap().points.push(point);
+        self.lines.last_mut().unwrap().add_point(point);
         self
     }
 
@@ -156,13 +161,13 @@ where
     P: PointT + Clone,
 {
     let lines_n = cursor.read_u32::<T>()?;
-    let mut multiline = MultiLineString::new(srid);
+    let mut multiline = MultiLineString::with_capacity(srid, lines_n as usize);
     for _i in 0..lines_n {
-        multiline.add_line();
         // skip 1 byte for byte order and 4 bytes for point type
         cursor.read_u8()?;
         cursor.read_u32::<T>()?;
         let points_n = cursor.read_u32::<T>()?;
+        multiline.add_line_with_cap(points_n as usize);
         for _p in 0..points_n {
             multiline.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
         }

@@ -48,6 +48,18 @@ where
         }
     }
 
+    pub fn add_geometry<'a>(&'a mut self, geometry: GeometryContainer<T>) -> &mut Self {
+        self.geometries.push(geometry);
+        self
+    }
+
+    pub fn add_geometries<'a>(&'a mut self, geometries: impl IntoIterator<Item = GeometryContainer<T>>) -> &mut Self {
+        for gc in geometries {
+            self.geometries.push(gc);
+        }
+        self
+    }
+
     pub fn dimension(&self) -> u32 {
         let mut dimension = Dimension::None as u32;
         if let Some(geometry) = self.geometries.first() {
@@ -188,4 +200,270 @@ where
         g_collection.geometries.push(g_container);
     }
     Ok(g_collection)
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_dimensions_point() {
+        assert_eq!(
+            Dimension::None as u32,
+            GeometryContainer::Point(Point::new(0.0, 0.0, None)).dimension()
+        );
+        assert_eq!(
+            Dimension::Z as u32,
+            GeometryContainer::Point(PointZ::new(0.0, 0.0, 0.0, None)).dimension()
+        );
+        assert_eq!(
+            Dimension::M as u32,
+            GeometryContainer::Point(PointM::new(0.0, 0.0, 0.0, None)).dimension()
+        );
+        assert_eq!(
+            Dimension::ZM as u32,
+            GeometryContainer::Point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).dimension()
+        );
+    }
+
+    #[test]
+    fn test_dimensions_line_string() {
+        assert_eq!(
+            Dimension::None as u32,
+            GeometryContainer::LineString(
+                LineString::new(None)
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::Z as u32,
+            GeometryContainer::LineString(
+                LineString::new(None)
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::M as u32,
+            GeometryContainer::LineString(
+                LineString::new(None)
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::ZM as u32,
+            GeometryContainer::LineString(
+                LineString::new(None)
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+    }
+
+    #[test]
+    fn test_dimensions_polygon() {
+        assert_eq!(
+            Dimension::None as u32,
+            GeometryContainer::Polygon(
+                Polygon::new(None)
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::Z as u32,
+            GeometryContainer::Polygon(
+                Polygon::new(None)
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::M as u32,
+            GeometryContainer::Polygon(
+                Polygon::new(None)
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::ZM as u32,
+            GeometryContainer::Polygon(
+                Polygon::new(None)
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+    }
+
+    #[test]
+    fn test_dimensions_multi_point() {
+        assert_eq!(
+            Dimension::None as u32,
+            GeometryContainer::MultiPoint(
+                MultiPoint::new(None)
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::Z as u32,
+            GeometryContainer::MultiPoint(
+                MultiPoint::new(None)
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::M as u32,
+            GeometryContainer::MultiPoint(
+                MultiPoint::new(None)
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::ZM as u32,
+            GeometryContainer::MultiPoint(
+                MultiPoint::new(None)
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+    }
+
+    #[test]
+    fn test_dimensions_multi_line_string() {
+        assert_eq!(
+            Dimension::None as u32,
+            GeometryContainer::MultiLineString(
+                MultiLineString::new(None)
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::Z as u32,
+            GeometryContainer::MultiLineString(
+                MultiLineString::new(None)
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::M as u32,
+            GeometryContainer::MultiLineString(
+                MultiLineString::new(None)
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::ZM as u32,
+            GeometryContainer::MultiLineString(
+                MultiLineString::new(None)
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+    }
+
+    #[test]
+    fn test_dimensions_multi_polygon() {
+        assert_eq!(
+            Dimension::None as u32,
+            GeometryContainer::MultiPolygon(
+                MultiPolygon::new(None)
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::Z as u32,
+            GeometryContainer::MultiPolygon(
+                MultiPolygon::new(None)
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::M as u32,
+            GeometryContainer::MultiPolygon(
+                MultiPolygon::new(None)
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::ZM as u32,
+            GeometryContainer::MultiPolygon(
+                MultiPolygon::new(None)
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .to_owned()
+            )
+            .dimension()
+        );
+    }
+
+    #[test]
+    fn test_dimensions_geometry_collection() {
+        assert_eq!(
+            Dimension::None as u32,
+            GeometryContainer::GeometryCollection(
+                GeometryCollection::new(None)
+                    .add_geometry(GeometryContainer::Point(Point::new(0.0, 0.0, None)))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::Z as u32,
+            GeometryContainer::GeometryCollection(
+                GeometryCollection::new(None)
+                    .add_geometry(GeometryContainer::Point(PointZ::new(0.0, 0.0, 0.0, None)))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::M as u32,
+            GeometryContainer::GeometryCollection(
+                GeometryCollection::new(None)
+                    .add_geometry(GeometryContainer::Point(PointM::new(0.0, 0.0, 0.0, None)))
+                    .to_owned()
+            )
+            .dimension()
+        );
+        assert_eq!(
+            Dimension::ZM as u32,
+            GeometryContainer::GeometryCollection(
+                GeometryCollection::new(None)
+                    .add_geometry(GeometryContainer::Point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)))
+                    .to_owned()
+            )
+            .dimension()
+        );
+    }
 }

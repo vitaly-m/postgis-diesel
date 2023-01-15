@@ -40,6 +40,13 @@ struct NewDistanceSample {
 }
 
 #[derive(Insertable)]
+#[diesel(table_name = point_samples)]
+struct NewPointSample {
+    name: String,
+    point: Point,
+}
+
+#[derive(Insertable)]
 #[diesel(table_name = geography_samples)]
 struct NewGeographySample {
     name: String,
@@ -78,6 +85,14 @@ struct DistanceSample {
     name: String,
     point: Point,
     polygon: Polygon<Point>,
+}
+
+#[derive(Queryable, Debug, PartialEq)]
+#[diesel(table_name = point_samples)]
+struct PointSample {
+    id: i32,
+    name: String,
+    point: LineString<Point>,
 }
 
 #[derive(Queryable, Debug, PartialEq)]
@@ -129,6 +144,16 @@ table! {
 table! {
     use postgis_diesel::sql_types::*;
     use diesel::sql_types::*;
+    point_samples (id) {
+        id -> Int4,
+        name -> Text,
+        point -> Geometry,
+    }
+}
+
+table! {
+    use postgis_diesel::sql_types::*;
+    use diesel::sql_types::*;
     geography_samples (id) {
         id -> Int4,
         name -> Text,
@@ -158,6 +183,7 @@ fn initialize() -> PgConnection {
         let _ = diesel::sql_query("DROP TABLE geometry_samples").execute(&mut conn);
         let _ = diesel::sql_query("DROP TABLE distance_samples").execute(&mut conn);
         let _ = diesel::sql_query("DROP TABLE geography_samples").execute(&mut conn);
+        let _ = diesel::sql_query("DROP TABLE point_samples").execute(&mut conn);
 
         let _ = diesel::sql_query(
             "CREATE TABLE geometry_samples
@@ -206,6 +232,16 @@ fn initialize() -> PgConnection {
 )",
         )
         .execute(&mut conn);
+
+        let _ = diesel::sql_query(
+            "CREATE TABLE point_samples
+(
+    id                SERIAL PRIMARY KEY,
+    name              text,
+    point             geometry(Point,4326) NOT NULL
+)",
+        )
+        .execute(&mut conn);
     });
     conn
 }
@@ -219,46 +255,24 @@ fn new_line(points: Vec<(f64, f64)>) -> LineString<Point> {
             srid: Option::Some(4326),
         });
     }
-    LineString {
-        points: l_points,
-        srid: Option::Some(4326),
-    }
+    //just to check that add_points works
+    LineString::new(Option::Some(4326)).add_points(l_points).to_owned()
 }
 
 fn new_point(x: f64, y: f64) -> Point {
-    Point {
-        x,
-        y,
-        srid: Some(4326),
-    }
+    Point::new(x, y, Some(4326))
 }
 
 fn new_point_z(x: f64, y: f64, z: f64) -> PointZ {
-    PointZ {
-        x,
-        y,
-        z,
-        srid: Some(4326),
-    }
+    PointZ::new(x, y, z, Some(4326))
 }
 
 fn new_point_m(x: f64, y: f64, m: f64) -> PointM {
-    PointM {
-        x,
-        y,
-        m,
-        srid: Some(4326),
-    }
+    PointM::new(x, y, m, Some(4326))
 }
 
 fn new_point_zm(x: f64, y: f64, z: f64, m: f64) -> PointZM {
-    PointZM {
-        x,
-        y,
-        z,
-        m,
-        srid: Some(4326),
-    }
+    PointZM::new(x, y, z, m, Some(4326))
 }
 
 fn new_geometry_collection() -> GeometryCollection<Point> {
@@ -290,29 +304,20 @@ fn new_geometry_collection() -> GeometryCollection<Point> {
             new_point(75.0, 64.0),
         ]);
     let mut gc = GeometryCollection::new(Some(4326));
-    gc.geometries
-        .push(GeometryContainer::Point(new_point(73.0, 64.0)));
-    gc.geometries
-        .push(GeometryContainer::LineString(new_line(vec![
-            (72.0, 64.0),
-            (73.0, 64.0),
-        ])));
-    gc.geometries.push(GeometryContainer::Polygon(polygon));
-    gc.geometries
-        .push(GeometryContainer::MultiPoint(MultiPoint {
-            points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
-            srid: Some(4326),
-        }));
-    gc.geometries
-        .push(GeometryContainer::MultiLineString(multiline));
-    gc.geometries
-        .push(GeometryContainer::MultiPolygon(multipolygon));
+    gc.add_geometry(GeometryContainer::Point(new_point(73.0, 64.0)));
+    gc.add_geometry(GeometryContainer::LineString(new_line(vec![
+        (72.0, 64.0),
+        (73.0, 64.0),
+    ])));
+    gc.add_geometry(GeometryContainer::Polygon(polygon));
+    gc.add_geometry(GeometryContainer::MultiPoint(MultiPoint {
+        points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
+        srid: Some(4326),
+    }));
+    gc.add_geometries(vec![GeometryContainer::MultiLineString(multiline), GeometryContainer::MultiPolygon(multipolygon)]);
     let mut inner_gc = GeometryCollection::new(Some(4326));
-    inner_gc
-        .geometries
-        .push(GeometryContainer::Point(new_point(74.0, 64.0)));
-    gc.geometries
-        .push(GeometryContainer::GeometryCollection(inner_gc));
+    inner_gc.add_geometry(GeometryContainer::Point(new_point(74.0, 64.0)));
+    gc.add_geometry(GeometryContainer::GeometryCollection(inner_gc));
     gc
 }
 
@@ -518,6 +523,21 @@ fn distance_2d_test() {
         .get_result(&mut conn)
         .expect("nothing found");
     assert_eq!("Moscow", found_sample.name);
+}
+
+#[test]
+#[should_panic(expected = "Geometry Point is not a LineString")]
+fn unmatched_types_test() {
+    let mut conn = initialize();
+
+    let sample = NewPointSample {
+        name: String::from("should fail"),
+        point: new_point(72.0, 64.0),
+    };
+    let _point_from_db: PointSample = diesel::insert_into(point_samples::table)
+        .values(&sample)
+        .get_result(&mut conn)
+        .unwrap();
 }
 
 macro_rules! operator_test {

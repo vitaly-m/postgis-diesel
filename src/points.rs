@@ -46,25 +46,25 @@ impl EwkbSerializable for PointZM {
 
 impl Point {
     pub fn new(x: f64, y: f64, srid: Option<u32>) -> Self {
-        Self { x, y, srid }
+        Point::new_point(x, y, srid, None, None).unwrap()
     }
 }
 
 impl PointZ {
     pub fn new(x: f64, y: f64, z: f64, srid: Option<u32>) -> Self {
-        Self { x, y, z, srid }
+        PointZ::new_point(x, y, srid, Some(z), None).unwrap()
     }
 }
 
 impl PointM {
     pub fn new(x: f64, y: f64, m: f64, srid: Option<u32>) -> Self {
-        Self { x, y, m, srid }
+        PointM::new_point(x, y, srid, None, Some(m)).unwrap()
     }
 }
 
 impl PointZM {
     pub fn new(x: f64, y: f64, z: f64, m: f64, srid: Option<u32>) -> Self {
-        Self { x, y, z, m, srid }
+        PointZM::new_point(x, y, srid, Some(z), Some(m)).unwrap()
     }
 }
 
@@ -149,7 +149,7 @@ impl PointT for PointZ {
         }
         if m.is_some() {
             return Err(PointConstructorError {
-                reason: format!("unexpectedly defined m {:?} for PointZ", m).to_string(),
+                reason: format!("unexpectedly defined M {:?} for PointZ", m).to_string(),
             });
         }
         Ok(PointZ {
@@ -200,7 +200,7 @@ impl PointT for PointM {
         }
         if z.is_some() {
             return Err(PointConstructorError {
-                reason: format!("unexpectedly defined z {:?} for PointM", z).to_string(),
+                reason: format!("unexpectedly defined Z {:?} for PointM", z).to_string(),
             });
         }
         Ok(PointM {
@@ -264,9 +264,9 @@ impl PointT for PointZM {
     }
 }
 
-macro_rules! impl_point_from_sql {
-    ($p:ident) => {
-        impl FromSql<Geometry, Pg> for $p {
+macro_rules! impl_point_from_to_sql {
+    ($g:ident, $p:ident) => {
+        impl FromSql<$g, Pg> for $p {
             fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
                 let mut r = Cursor::new(bytes.as_bytes());
                 let end = r.read_u8()?;
@@ -278,26 +278,7 @@ macro_rules! impl_point_from_sql {
             }
         }
 
-        impl FromSql<Geography, Pg> for $p {
-            fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
-                let mut r = Cursor::new(bytes.as_bytes());
-                let end = r.read_u8()?;
-                if end == BIG_ENDIAN {
-                    read_point::<BigEndian, $p>(&mut r)
-                } else {
-                    read_point::<LittleEndian, $p>(&mut r)
-                }
-            }
-        }
-
-        impl ToSql<Geometry, Pg> for $p {
-            fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
-                write_point(self, self.get_srid(), out)?;
-                Ok(IsNull::No)
-            }
-        }
-
-        impl ToSql<Geography, Pg> for $p {
+        impl ToSql<$g, Pg> for $p {
             fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
                 write_point(self, self.get_srid(), out)?;
                 Ok(IsNull::No)
@@ -306,10 +287,15 @@ macro_rules! impl_point_from_sql {
     };
 }
 
-impl_point_from_sql!(Point);
-impl_point_from_sql!(PointZ);
-impl_point_from_sql!(PointM);
-impl_point_from_sql!(PointZM);
+impl_point_from_to_sql!(Geometry, Point);
+impl_point_from_to_sql!(Geometry, PointZ);
+impl_point_from_to_sql!(Geometry, PointM);
+impl_point_from_to_sql!(Geometry, PointZM);
+
+impl_point_from_to_sql!(Geography, Point);
+impl_point_from_to_sql!(Geography, PointZ);
+impl_point_from_to_sql!(Geography, PointM);
+impl_point_from_to_sql!(Geography, PointZM);
 
 pub fn write_point<T>(point: &T, srid: Option<u32>, out: &mut Output<Pg>) -> serialize::Result
 where
@@ -364,4 +350,61 @@ where
         m = Some(cursor.read_f64::<T>()?);
     }
     Ok(P::new_point(x, y, srid, z, m)?)
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_point_dimensions() {
+        assert_eq!(Dimension::None as u32, Point::new(0.0, 0.0, None).dimension());
+        assert_eq!(Dimension::Z as u32, PointZ::new(0.0, 0.0, 0.0, None).dimension());
+        assert_eq!(Dimension::M as u32, PointM::new(0.0, 0.0, 0.0, None).dimension());
+        assert_eq!(Dimension::ZM as u32, PointZM::new(0.0, 0.0, 0.0, 0.0, None).dimension());
+    }
+
+    #[test]
+    #[should_panic(expected = "unexpectedly defined Z Some(1.0) or M Some(1.0) for Point")]
+    fn test_new_point_err() {
+        Point::new_point(72.0, 64.0, None, Some(1.0), Some(1.0)).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Z is not defined, but mandatory for PointZ")]
+    fn test_new_point_z_not_def_err() {
+        PointZ::new_point(72.0, 64.0, None, None, None).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "unexpectedly defined M Some(1.0) for PointZ")]
+    fn test_new_point_z_m_def_err() {
+        PointZ::new_point(72.0, 64.0, None, Some(1.0), Some(1.0)).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "M is not defined, but mandatory for PointM")]
+    fn test_new_point_m_not_def_err() {
+        PointM::new_point(72.0, 64.0, None, None, None).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "unexpectedly defined Z Some(1.0) for PointM")]
+    fn test_new_point_m_z_def_err() {
+        PointM::new_point(72.0, 64.0, None, Some(1.0), Some(1.0)).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "Z is not defined, but mandatory for PointZM")]
+    fn test_new_point_zm_z_not_def_err() {
+        PointZM::new_point(72.0, 64.0, None, None, Some(1.0)).unwrap();
+    }
+
+    #[test]
+    #[should_panic(expected = "M is not defined, but mandatory for PointZM")]
+    fn test_new_point_zm_m_not_def_err() {
+        PointZM::new_point(72.0, 64.0, None, Some(1.0), None).unwrap();
+    }
+
 }

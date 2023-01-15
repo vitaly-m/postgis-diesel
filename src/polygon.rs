@@ -21,14 +21,22 @@ where
     T: PointT + Clone,
 {
     pub fn new(srid: Option<u32>) -> Self {
+        Self::with_capacity(srid, 0)
+    }
+
+    pub fn with_capacity(srid: Option<u32>, cap: usize) -> Self {
         Polygon {
-            rings: Vec::new(),
-            srid: srid,
+            rings: Vec::with_capacity(cap),
+            srid,
         }
     }
 
     pub fn add_ring<'a>(&'a mut self) -> &mut Self {
-        self.rings.push(Vec::new());
+        self.add_ring_with_capacity(0)
+    }
+
+    pub fn add_ring_with_capacity<'a>(&'a mut self, cap: usize) -> &mut Self {
+        self.rings.push(Vec::with_capacity(cap));
         self
     }
 
@@ -154,10 +162,10 @@ where
     P: PointT + Clone,
 {
     let rings_n = cursor.read_u32::<T>()?;
-    let mut polygon = Polygon::new(srid);
+    let mut polygon = Polygon::with_capacity(srid, rings_n as usize);
     for _i in 0..rings_n {
-        polygon.add_ring();
         let points_n = cursor.read_u32::<T>()?;
+        polygon.add_ring_with_capacity(points_n as usize);
         for _p in 0..points_n {
             polygon.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
         }
