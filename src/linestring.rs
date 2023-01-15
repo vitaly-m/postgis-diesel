@@ -28,6 +28,29 @@ impl<T> LineString<T>
 where
     T: PointT,
 {
+    pub fn new(srid: Option<u32>) -> Self {
+        Self::with_capacity(srid, 0)
+    }
+
+    pub fn with_capacity(srid: Option<u32>, cap: usize) -> Self {
+        LineString {
+            points: Vec::with_capacity(cap),
+            srid,
+        }
+    }
+
+    pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
+        self.points.push(point);
+        self
+    }
+
+    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+        for point in points {
+            self.points.push(point);
+        }
+        self
+    }
+
     pub fn dimension(&self) -> u32 {
         let mut dimension = Dimension::None as u32;
         if let Some(point) = self.points.first() {
@@ -115,12 +138,9 @@ where
     P: PointT + Clone,
 {
     let len = cursor.read_u32::<T>()?;
-    let mut points = Vec::with_capacity(len as usize);
+    let mut ls = LineString::with_capacity(srid, len as usize);
     for _i in 0..len {
-        points.push(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
+        ls.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
     }
-    Ok(LineString {
-        points: points,
-        srid: srid,
-    })
+    Ok(ls)
 }

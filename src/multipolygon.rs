@@ -21,15 +21,23 @@ where
     T: PointT + Clone,
 {
     pub fn new(srid: Option<u32>) -> Self {
+        Self::with_capacity(srid, 0)
+    }
+
+    pub fn with_capacity(srid: Option<u32>, cap: usize) -> Self {
         MultiPolygon {
-            polygons: Vec::new(),
-            srid: srid,
+            polygons: Vec::with_capacity(cap),
+            srid,
         }
     }
 
     pub fn add_empty_polygon<'a>(&'a mut self) -> &mut Self {
+        self.add_empty_polygon_with_capacity(0)
+    }
+
+    pub fn add_empty_polygon_with_capacity<'a>(&'a mut self, cap: usize) -> &mut Self {
         self.polygons.push(Polygon {
-            rings: Vec::new(),
+            rings: Vec::with_capacity(cap),
             srid: self.srid,
         });
         self
@@ -153,7 +161,7 @@ where
     P: PointT + Clone,
 {
     let polygons_n = cursor.read_u32::<T>()?;
-    let mut polygon = MultiPolygon::new(srid);
+    let mut polygon = MultiPolygon::with_capacity(srid, polygons_n as usize);
 
     for _i in 0..polygons_n {
         // skip 1 byte for byte order and 4 bytes for point type
