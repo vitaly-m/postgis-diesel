@@ -15,3 +15,4 @@ mod points;
 mod polygon;
 pub mod sql_types;
 pub mod types;
+pub mod functions;
