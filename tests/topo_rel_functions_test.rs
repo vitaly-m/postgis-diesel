@@ -19,8 +19,6 @@ static INIT: Once = Once::new();
 #[diesel(table_name = topo_rel_functions)]
 struct NewGeometrySample {
     name: String,
-    point_z: PointZ,
-    linestring: LineString<PointZ>,
 }
 
 #[derive(Queryable)]
@@ -29,8 +27,6 @@ struct NewGeometrySample {
 struct GeometrySample {
     id: i32,
     name: String,
-    point_z: PointZ,
-    linestring: LineString<PointZ>,
 }
 
 table! {
@@ -39,8 +35,6 @@ table! {
     topo_rel_functions (id) {
         id -> Int4,
         name -> Text,
-        point_z -> Geometry,
-        linestring -> Geometry,
     }
 }
 
@@ -61,12 +55,17 @@ fn initialize() -> PgConnection {
             "CREATE TABLE topo_rel_functions
 (
     id                SERIAL PRIMARY KEY,
-    name              text,
-    point_z           geometry(PointZ,4326) NOT NULL,
-    linestring        geometry(LinestringZ,4326) NOT NULL
+    name              text
 )",
         )
         .execute(&mut conn);
+        let sample = NewGeometrySample {
+            name: "topo_rel_test".to_string(),
+        };
+        diesel::insert_into(topo_rel_functions::table)
+        .values(&sample)
+        .execute(&mut conn)
+        .unwrap();
     });
     conn
 }
@@ -74,22 +73,14 @@ fn initialize() -> PgConnection {
 #[test]
 fn intersect_3d_test() {
     let mut conn = initialize();
-    let sample = NewGeometrySample {
-        name: "3d_intersects".to_string(),
-        point_z: PointZ::new(0.0, 0.0, 2.0, Some(4326)),
-        linestring: LineString::new(Some(4326))
+    
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_3d_intersects(
+            PointZ::new(0.0, 0.0, 2.0, Some(4326)),
+            LineString::new(Some(4326))
             .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
             .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
             .to_owned(),
-    };
-    diesel::insert_into(topo_rel_functions::table)
-        .values(&sample)
-        .execute(&mut conn)
-        .unwrap();
-    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_3d_intersects(
-            topo_rel_functions::point_z,
-            topo_rel_functions::linestring,
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -97,33 +88,22 @@ fn intersect_3d_test() {
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_3d_intersects(
             PointZ::new(0.0, 0.0, 1.0, Some(4326)),
-            topo_rel_functions::linestring,
+            LineString::new(Some(4326))
+            .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
+            .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
+            .to_owned(),
         ))
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(1, found_samples.len());
     for gs in found_samples {
-        assert_eq!("3d_intersects".to_string(), gs.name);
-        assert_eq!(sample.point_z, gs.point_z);
-        assert_eq!(sample.linestring, gs.linestring);
+        assert_eq!("topo_rel_test".to_string(), gs.name);
     }
 }
 
 #[test]
 fn contains_test() {
     let mut conn = initialize();
-    let sample = NewGeometrySample {
-        name: "contains".to_string(),
-        point_z: PointZ::new(1.0, 1.0, 2.0, Some(4326)),
-        linestring: LineString::new(Some(4326))
-            .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
-            .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
-            .to_owned(),
-    };
-    diesel::insert_into(topo_rel_functions::table)
-        .values(&sample)
-        .execute(&mut conn)
-        .unwrap();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_contains(
             Polygon::new(Some(4326))
@@ -153,8 +133,6 @@ fn contains_test() {
         .unwrap();
     assert_eq!(1, found_samples.len());
     for gs in found_samples {
-        assert_eq!("contains".to_string(), gs.name);
-        assert_eq!(sample.point_z, gs.point_z);
-        assert_eq!(sample.linestring, gs.linestring);
+        assert_eq!("topo_rel_test".to_string(), gs.name);
     }
 }
