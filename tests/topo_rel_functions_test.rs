@@ -10,7 +10,7 @@ use diesel::Connection;
 use diesel::{QueryDsl, RunQueryDsl};
 use dotenv::dotenv;
 
-use postgis_diesel::functions::st_3d_intersects;
+use postgis_diesel::functions::{st_3d_intersects, st_contains};
 use postgis_diesel::types::*;
 
 static INIT: Once = Once::new();
@@ -85,7 +85,7 @@ fn intersect_3d_test() {
     diesel::insert_into(topo_rel_functions::table)
         .values(&sample)
         .execute(&mut conn)
-        .expect("Can't insert 3d_intersect sample");
+        .unwrap();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_3d_intersects(
             topo_rel_functions::point_z,
@@ -104,6 +104,56 @@ fn intersect_3d_test() {
     assert_eq!(1, found_samples.len());
     for gs in found_samples {
         assert_eq!("3d_intersects".to_string(), gs.name);
+        assert_eq!(sample.point_z, gs.point_z);
+        assert_eq!(sample.linestring, gs.linestring);
+    }
+}
+
+#[test]
+fn contains_test() {
+    let mut conn = initialize();
+    let sample = NewGeometrySample {
+        name: "contains".to_string(),
+        point_z: PointZ::new(1.0, 1.0, 2.0, Some(4326)),
+        linestring: LineString::new(Some(4326))
+            .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
+            .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
+            .to_owned(),
+    };
+    diesel::insert_into(topo_rel_functions::table)
+        .values(&sample)
+        .execute(&mut conn)
+        .unwrap();
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_contains(
+            Polygon::new(Some(4326))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .to_owned(),
+            Point::new(3.0, 1.0, Some(4326)),
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(0, found_samples.len());
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_contains(
+            Polygon::new(Some(4326))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .to_owned(),
+            Point::new(1.0, 1.0, Some(4326)),
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(1, found_samples.len());
+    for gs in found_samples {
+        assert_eq!("contains".to_string(), gs.name);
         assert_eq!(sample.point_z, gs.point_z);
         assert_eq!(sample.linestring, gs.linestring);
     }
