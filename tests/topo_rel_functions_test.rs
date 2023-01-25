@@ -6,12 +6,14 @@ use std::sync::Once;
 
 // use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::pg::PgConnection;
+use diesel::query_builder::QueryId;
+use diesel::sql_types::SingleValue;
 use diesel::Connection;
 use diesel::{QueryDsl, RunQueryDsl};
 use dotenv::dotenv;
 
 use postgis_diesel::functions::*;
-use postgis_diesel::sql_types::Geometry;
+use postgis_diesel::sql_types::{GeoType, Geography, Geometry};
 use postgis_diesel::types::*;
 
 static INIT: Once = Once::new();
@@ -64,9 +66,9 @@ fn initialize() -> PgConnection {
             name: "topo_rel_test".to_string(),
         };
         diesel::insert_into(topo_rel_functions::table)
-        .values(&sample)
-        .execute(&mut conn)
-        .unwrap();
+            .values(&sample)
+            .execute(&mut conn)
+            .unwrap();
     });
     conn
 }
@@ -78,9 +80,9 @@ fn intersect_3d_test() {
         .filter(st_3d_intersects(
             PointZ::new(0.0, 0.0, 2.0, Some(4326)),
             LineString::new(Some(4326))
-            .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
-            .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
-            .to_owned(),
+                .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
+                .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
+                .to_owned(),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -89,9 +91,9 @@ fn intersect_3d_test() {
         .filter(st_3d_intersects(
             PointZ::new(0.0, 0.0, 1.0, Some(4326)),
             LineString::new(Some(4326))
-            .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
-            .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
-            .to_owned(),
+                .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
+                .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
+                .to_owned(),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -174,7 +176,7 @@ fn contains_properly_test() {
 }
 
 #[test]
-fn covered_by_test() {
+fn covered_by_geometry_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_covered_by::<Geometry, Point, Polygon<Point>>(
@@ -185,7 +187,7 @@ fn covered_by_test() {
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .to_owned()
+                .to_owned(),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -199,7 +201,43 @@ fn covered_by_test() {
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .to_owned()
+                .to_owned(),
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(1, found_samples.len());
+    for gs in found_samples {
+        assert_eq!("topo_rel_test".to_string(), gs.name);
+    }
+}
+
+#[test]
+fn covered_by_geography_test() {
+    let mut conn = initialize();
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_covered_by::<Geography, Point, Polygon<Point>>(
+            Point::new(3.0, 1.0, Some(4326)),
+            Polygon::new(Some(4326))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .to_owned(),
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(0, found_samples.len());
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_covered_by::<Geography, Point, Polygon<Point>>(
+            Point::new(1.0, 1.0, Some(4326)),
+            Polygon::new(Some(4326))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .to_owned(),
         ))
         .get_results(&mut conn)
         .unwrap();
