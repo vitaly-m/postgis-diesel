@@ -10,7 +10,8 @@ use diesel::Connection;
 use diesel::{QueryDsl, RunQueryDsl};
 use dotenv::dotenv;
 
-use postgis_diesel::functions::{st_3d_intersects, st_contains};
+use postgis_diesel::functions::*;
+use postgis_diesel::sql_types::Geometry;
 use postgis_diesel::types::*;
 
 static INIT: Once = Once::new();
@@ -73,7 +74,6 @@ fn initialize() -> PgConnection {
 #[test]
 fn intersect_3d_test() {
     let mut conn = initialize();
-    
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_3d_intersects(
             PointZ::new(0.0, 0.0, 2.0, Some(4326)),
@@ -128,6 +128,78 @@ fn contains_test() {
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .to_owned(),
             Point::new(1.0, 1.0, Some(4326)),
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(1, found_samples.len());
+    for gs in found_samples {
+        assert_eq!("topo_rel_test".to_string(), gs.name);
+    }
+}
+
+#[test]
+fn contains_properly_test() {
+    let mut conn = initialize();
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_contains_properly(
+            Polygon::new(Some(4326))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .to_owned(),
+            Point::new(3.0, 1.0, Some(4326)),
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(0, found_samples.len());
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_contains_properly(
+            Polygon::new(Some(4326))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .to_owned(),
+            Point::new(1.0, 1.0, Some(4326)),
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(1, found_samples.len());
+    for gs in found_samples {
+        assert_eq!("topo_rel_test".to_string(), gs.name);
+    }
+}
+
+#[test]
+fn covered_by_test() {
+    let mut conn = initialize();
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_covered_by::<Geometry, Point, Polygon<Point>>(
+            Point::new(3.0, 1.0, Some(4326)),
+            Polygon::new(Some(4326))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .to_owned()
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(0, found_samples.len());
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_covered_by::<Geometry, Point, Polygon<Point>>(
+            Point::new(1.0, 1.0, Some(4326)),
+            Polygon::new(Some(4326))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .to_owned()
         ))
         .get_results(&mut conn)
         .unwrap();
