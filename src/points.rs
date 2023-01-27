@@ -359,10 +359,22 @@ mod tests {
 
     #[test]
     fn test_point_dimensions() {
-        assert_eq!(Dimension::None as u32, Point::new(0.0, 0.0, None).dimension());
-        assert_eq!(Dimension::Z as u32, PointZ::new(0.0, 0.0, 0.0, None).dimension());
-        assert_eq!(Dimension::M as u32, PointM::new(0.0, 0.0, 0.0, None).dimension());
-        assert_eq!(Dimension::ZM as u32, PointZM::new(0.0, 0.0, 0.0, 0.0, None).dimension());
+        assert_eq!(
+            Dimension::None as u32,
+            Point::new(0.0, 0.0, None).dimension()
+        );
+        assert_eq!(
+            Dimension::Z as u32,
+            PointZ::new(0.0, 0.0, 0.0, None).dimension()
+        );
+        assert_eq!(
+            Dimension::M as u32,
+            PointM::new(0.0, 0.0, 0.0, None).dimension()
+        );
+        assert_eq!(
+            Dimension::ZM as u32,
+            PointZM::new(0.0, 0.0, 0.0, 0.0, None).dimension()
+        );
     }
 
     #[test]
@@ -406,5 +418,4 @@ mod tests {
     fn test_new_point_zm_m_not_def_err() {
         PointZM::new_point(72.0, 64.0, None, Some(1.0), None).unwrap();
     }
-
 }

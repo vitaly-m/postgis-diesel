@@ -5,6 +5,7 @@ extern crate diesel;
 extern crate serde;
 
 mod ewkb;
+pub mod functions;
 mod geometrycollection;
 mod linestring;
 mod multiline;

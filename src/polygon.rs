@@ -48,8 +48,7 @@ where
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self
-    {
+    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
         if self.rings.last().is_none() {
             self.add_ring();
         }

@@ -256,7 +256,9 @@ fn new_line(points: Vec<(f64, f64)>) -> LineString<Point> {
         });
     }
     //just to check that add_points works
-    LineString::new(Option::Some(4326)).add_points(l_points).to_owned()
+    LineString::new(Option::Some(4326))
+        .add_points(l_points)
+        .to_owned()
 }
 
 fn new_point(x: f64, y: f64) -> Point {
@@ -314,7 +316,10 @@ fn new_geometry_collection() -> GeometryCollection<Point> {
         points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
         srid: Some(4326),
     }));
-    gc.add_geometries(vec![GeometryContainer::MultiLineString(multiline), GeometryContainer::MultiPolygon(multipolygon)]);
+    gc.add_geometries(vec![
+        GeometryContainer::MultiLineString(multiline),
+        GeometryContainer::MultiPolygon(multipolygon),
+    ]);
     let mut inner_gc = GeometryCollection::new(Some(4326));
     inner_gc.add_geometry(GeometryContainer::Point(new_point(74.0, 64.0)));
     gc.add_geometry(GeometryContainer::GeometryCollection(inner_gc));
