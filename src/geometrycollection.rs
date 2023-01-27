@@ -53,7 +53,10 @@ where
         self
     }
 
-    pub fn add_geometries<'a>(&'a mut self, geometries: impl IntoIterator<Item = GeometryContainer<T>>) -> &mut Self {
+    pub fn add_geometries<'a>(
+        &'a mut self,
+        geometries: impl IntoIterator<Item = GeometryContainer<T>>,
+    ) -> &mut Self {
         for gc in geometries {
             self.geometries.push(gc);
         }
@@ -460,7 +463,9 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::GeometryCollection(
                 GeometryCollection::new(None)
-                    .add_geometry(GeometryContainer::Point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)))
+                    .add_geometry(GeometryContainer::Point(PointZM::new(
+                        0.0, 0.0, 0.0, 0.0, None
+                    )))
                     .to_owned()
             )
             .dimension()

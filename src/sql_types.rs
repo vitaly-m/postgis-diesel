@@ -33,14 +33,8 @@ pub struct Geometry;
 #[diesel(postgres_type(name = "geography"))]
 pub struct Geography;
 
-pub trait GeoType: SingleValue {
+pub trait GeoType: SingleValue {}
 
-}
+impl GeoType for Geometry {}
 
-impl GeoType for Geometry {
-
-}
-
-impl GeoType for Geography {
-
-}
+impl GeoType for Geography {}

@@ -51,7 +51,7 @@ sql_function! {
 sql_function! {
     /// Returns a number indicating the crossing behavior of two LineStrings.
     #[sql_name="ST_LineCrossingDirection"]
-    fn st_line_crossing_direction(left: Geometry, right: Geometry) -> Bool;
+    fn st_line_crossing_direction(left: Geometry, right: Geometry) -> Integer;
 }
 sql_function! {
     /// Tests if two geometries represent the same geometry and have points in the same directional order.
@@ -103,7 +103,8 @@ pub type StCrosses<GeomA, GeomB> = st_crosses::HelperType<GeomA, GeomB>;
 pub type StDisjoint<GeomA, GeomB> = st_disjoint::HelperType<GeomA, GeomB>;
 pub type StEquals<GeomA, GeomB> = st_equals::HelperType<GeomA, GeomB>;
 pub type StIntersects<G, GeomA, GeomB> = st_intersects::HelperType<G, GeomA, GeomB>;
-pub type StLineCrossingDirection<GeomA, GeomB> = st_line_crossing_direction::HelperType<GeomA, GeomB>;
+pub type StLineCrossingDirection<GeomA, GeomB> =
+    st_line_crossing_direction::HelperType<GeomA, GeomB>;
 pub type StOrderingEquals<GeomA, GeomB> = st_ordering_equals::HelperType<GeomA, GeomB>;
 pub type StOverlaps<GeomA, GeomB> = st_overlaps::HelperType<GeomA, GeomB>;
 pub type StRelateCheck<GeomA, GeomB, Matrix> = st_relate_check::HelperType<GeomA, GeomB, Matrix>;
