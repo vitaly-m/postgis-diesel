@@ -8,7 +8,7 @@ use diesel::pg::PgConnection;
 use diesel::sql_types::Text;
 use diesel::{Connection, IntoSql};
 use diesel::{QueryDsl, RunQueryDsl};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 use postgis_diesel::functions::*;
 use postgis_diesel::sql_types::{Geography, Geometry};

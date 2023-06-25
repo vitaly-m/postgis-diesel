@@ -8,7 +8,7 @@ use std::sync::Once;
 use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 use postgis_diesel::operators::*;
 use postgis_diesel::types::*;

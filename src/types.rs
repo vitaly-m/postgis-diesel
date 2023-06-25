@@ -238,6 +238,8 @@ pub struct MultiPolygon<T> {
 /// T is the Point type (Point or PointZ or PointM)
 #[derive(Clone, Debug, PartialEq, FromSqlRow)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde_geojson", derive(Deserialize))]
+#[cfg_attr(feature = "serde_geojson", serde(tag = "type", bound(deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>")))]
 pub enum GeometryContainer<T> {
     Point(T),
     LineString(LineString<T>),
@@ -266,6 +268,22 @@ pub struct GeometryCollection<T> {
     pub geometries: Vec<GeometryContainer<T>>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub srid: Option<u32>,
+}
+
+#[cfg(feature = "serde_geojson")]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(tag = "type", bound(deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>, P: serde::Deserialize<'de>"))]
+pub struct Feature<T, P: serde::Serialize> {
+    pub id: Option<String>,
+    pub geometry: Option<GeometryContainer<T>>,
+    pub properties: Option<P>,
+}
+
+#[cfg(feature = "serde_geojson")]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
+#[serde(tag = "type", bound(deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>, P: serde::Deserialize<'de>"))]
+pub struct FeatureCollection<T, P: serde::Serialize> {
+    pub features: Vec<Feature<T, P>>,
 }
 
 #[cfg(test)]
