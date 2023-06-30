@@ -326,7 +326,7 @@ where
     T: byteorder::ByteOrder,
     P: PointT,
 {
-    let g_header = read_ewkb_header::<T>(GeometryType::Point, cursor)?;
+    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::Point)?;
     read_point_coordinates::<T, P>(cursor, g_header.g_type, g_header.srid)
 }
 

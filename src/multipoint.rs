@@ -129,7 +129,7 @@ where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
 {
-    let g_header = read_ewkb_header::<T>(GeometryType::MultiPoint, cursor)?;
+    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::MultiPoint)?;
     read_multi_point_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 

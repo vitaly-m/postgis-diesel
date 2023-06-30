@@ -236,7 +236,9 @@ pub struct MultiPolygon<T> {
 /// Represents any type that can appear in a geometry or geography column.
 ///
 /// T is the Point type (Point or PointZ or PointM)
-#[derive(Clone, Debug, PartialEq, FromSqlRow)]
+#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
+#[diesel(sql_type = Geometry)]
+#[diesel(sql_type = Geography)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum GeometryContainer<T> {
     Point(T),

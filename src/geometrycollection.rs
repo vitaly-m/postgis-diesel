@@ -20,23 +20,6 @@ use diesel::{
 
 use crate::sql_types::*;
 
-impl<T> GeometryContainer<T>
-where
-    T: PointT + Clone,
-{
-    pub fn dimension(&self) -> u32 {
-        match self {
-            GeometryContainer::Point(g) => g.dimension(),
-            GeometryContainer::LineString(g) => g.dimension(),
-            GeometryContainer::Polygon(g) => g.dimension(),
-            GeometryContainer::MultiPoint(g) => g.dimension(),
-            GeometryContainer::MultiLineString(g) => g.dimension(),
-            GeometryContainer::MultiPolygon(g) => g.dimension(),
-            GeometryContainer::GeometryCollection(g) => g.dimension(),
-        }
-    }
-}
-
 impl<T> GeometryCollection<T>
 where
     T: PointT + Clone,
@@ -158,7 +141,7 @@ where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
 {
-    let g_header = read_ewkb_header::<T>(GeometryType::GeometryCollection, cursor)?;
+    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::GeometryCollection)?;
     read_geometry_collection_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 
