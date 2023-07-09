@@ -6,6 +6,19 @@ use std::marker::PhantomData;
 
 use crate::types::*;
 
+const WGS84_SRID: Option<u32> = Some(4326);
+
+macro_rules! check_srid_wgs84 {
+    ($x:ident) => {
+        if $x.srid.is_some() && $x.srid != WGS84_SRID {
+            return Err(ser::Error::custom(format!(
+                "Invalid SRID {}",
+                $x.srid.unwrap()
+            )));
+        }
+    };
+}
+
 pub trait GeoJsonGeometry<V> {
     fn to_geo_coordinates(&self) -> Vec<V>;
     fn from_geo_coordinates(coordinates: Vec<V>) -> Result<Self, PointConstructorError>
@@ -90,7 +103,7 @@ impl GeoJsonGeometry<f64> for Point {
                 reason: format!("invalid size {:?} for Point", coordinates.len()).to_string(),
             });
         }
-        Ok(Point::new(coordinates[0], coordinates[1], None))
+        Ok(Point::new(coordinates[0], coordinates[1], WGS84_SRID))
     }
 }
 
@@ -99,6 +112,7 @@ impl Serialize for Point {
     where
         S: Serializer,
     {
+        check_srid_wgs84!(self);
         let mut state = serializer.serialize_struct("Point", 2)?;
         state.serialize_field("type", "Point")?;
         state.serialize_field("coordinates", &self.to_geo_coordinates())?;
@@ -130,7 +144,7 @@ impl GeoJsonGeometry<f64> for PointZ {
             coordinates[0],
             coordinates[1],
             coordinates[2],
-            None,
+            WGS84_SRID,
         ))
     }
 }
@@ -140,6 +154,7 @@ impl Serialize for PointZ {
     where
         S: Serializer,
     {
+        check_srid_wgs84!(self);
         let mut state = serializer.serialize_struct("Point", 2)?;
         state.serialize_field("type", "Point")?;
         state.serialize_field("coordinates", &self.to_geo_coordinates())?;
@@ -167,7 +182,7 @@ impl<T: GeoJsonGeometry<f64> + PointT> GeoJsonGeometry<Vec<f64>> for MultiPoint<
     fn from_geo_coordinates(coordinates: Vec<Vec<f64>>) -> Result<Self, PointConstructorError> {
         let mut multi_point = MultiPoint::<T> {
             points: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
         for p in coordinates {
             multi_point.points.push(T::from_geo_coordinates(p)?);
@@ -181,6 +196,7 @@ impl<T: GeoJsonGeometry<f64> + PointT> Serialize for MultiPoint<T> {
     where
         S: Serializer,
     {
+        check_srid_wgs84!(self);
         let coordinates = self.to_geo_coordinates();
 
         let mut state = serializer.serialize_struct("MultiPoint", 2)?;
@@ -212,7 +228,7 @@ impl<T: GeoJsonGeometry<f64> + PointT> GeoJsonGeometry<Vec<f64>> for LineString<
     fn from_geo_coordinates(coordinates: Vec<Vec<f64>>) -> Result<Self, PointConstructorError> {
         let mut multi_point = LineString::<T> {
             points: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
         for p in coordinates {
             multi_point.points.push(T::from_geo_coordinates(p)?);
@@ -226,6 +242,7 @@ impl<T: GeoJsonGeometry<f64> + PointT> Serialize for LineString<T> {
     where
         S: Serializer,
     {
+        check_srid_wgs84!(self);
         let coordinates = self.to_geo_coordinates();
 
         let mut state = serializer.serialize_struct("LineString", 2)?;
@@ -259,7 +276,7 @@ impl<T: GeoJsonGeometry<f64> + PointT> GeoJsonGeometry<Vec<Vec<f64>>> for MultiL
     ) -> Result<Self, PointConstructorError> {
         let mut multi_line_string = MultiLineString::<T> {
             lines: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
         for line in coordinates {
             multi_line_string
@@ -275,6 +292,7 @@ impl<T: GeoJsonGeometry<f64> + PointT> Serialize for MultiLineString<T> {
     where
         S: Serializer,
     {
+        check_srid_wgs84!(self);
         let coordinates = self.to_geo_coordinates();
 
         let mut state = serializer.serialize_struct("MultiLineString", 2)?;
@@ -308,7 +326,7 @@ impl<T: GeoJsonGeometry<f64> + PointT + Clone> GeoJsonGeometry<Vec<Vec<f64>>> fo
     ) -> Result<Self, PointConstructorError> {
         let mut polygon = Polygon::<T> {
             rings: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
         for ring in coordinates {
             polygon.add_ring();
@@ -325,6 +343,7 @@ impl<T: GeoJsonGeometry<f64> + PointT + Clone> Serialize for Polygon<T> {
     where
         S: Serializer,
     {
+        check_srid_wgs84!(self);
         let coordinates = self.to_geo_coordinates();
 
         let mut state = serializer.serialize_struct("Polygon", 2)?;
@@ -358,7 +377,7 @@ impl<T: GeoJsonGeometry<f64> + PointT + Clone> GeoJsonGeometry<Vec<Vec<Vec<f64>>
     ) -> Result<Self, PointConstructorError> {
         let mut multi_polygon = MultiPolygon::<T> {
             polygons: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
         for coordinate in coordinates {
             let polygon = Polygon::<T>::from_geo_coordinates(coordinate)?;
@@ -373,6 +392,7 @@ impl<T: GeoJsonGeometry<f64> + PointT + Clone> Serialize for MultiPolygon<T> {
     where
         S: Serializer,
     {
+        check_srid_wgs84!(self);
         let coordinates = self.to_geo_coordinates();
 
         let mut state = serializer.serialize_struct("MultiPolygon", 2)?;
@@ -393,9 +413,7 @@ impl<'de, T: GeoJsonGeometry<f64> + PointT + Clone> Deserialize<'de> for MultiPo
     }
 }
 
-impl<T: GeoJsonGeometry<f64> + PointT + Clone + Serialize> Serialize
-    for GeometryContainer<T>
-{
+impl<T: GeoJsonGeometry<f64> + PointT + Clone + Serialize> Serialize for GeometryContainer<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -412,9 +430,7 @@ impl<T: GeoJsonGeometry<f64> + PointT + Clone + Serialize> Serialize
     }
 }
 
-impl<T: GeoJsonGeometry<f64> + PointT + Clone + Serialize> Serialize
-    for GeometryCollection<T>
-{
+impl<T: GeoJsonGeometry<f64> + PointT + Clone + Serialize> Serialize for GeometryCollection<T> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -484,7 +500,7 @@ impl<'de, T: GeoJsonGeometry<f64> + PointT + Clone + Deserialize<'de>> Visitor<'
 
         Ok(GeometryCollection::<T> {
             geometries: geometries.unwrap(),
-            srid: None,
+            srid: WGS84_SRID,
         })
     }
 }
@@ -545,7 +561,7 @@ mod tests {
 
     #[test]
     fn test_point_serde() {
-        let point = Point::new(72.0, 64.0, None);
+        let point = Point::new(72.0, 64.0, WGS84_SRID);
         let expected_json = "{\"type\":\"Point\",\"coordinates\":[72.0,64.0]}";
         let point_from_json = serde_json::from_str(expected_json).unwrap();
         assert_eq!(point, point_from_json);
@@ -555,7 +571,7 @@ mod tests {
 
     #[test]
     fn test_pointz_serde() {
-        let point = PointZ::new(72.0, 64.0, 52.0, None);
+        let point = PointZ::new(72.0, 64.0, 52.0, WGS84_SRID);
         let expected_json = "{\"type\":\"Point\",\"coordinates\":[72.0,64.0,52.0]}";
         let point_from_json = serde_json::from_str(expected_json).unwrap();
         assert_eq!(point, point_from_json);
@@ -567,11 +583,11 @@ mod tests {
     fn test_multi_point_serde() {
         let mut multi_point = MultiPoint::<Point> {
             points: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
-        multi_point.add_point(Point::new(1.0, 2.0, None));
-        multi_point.add_point(Point::new(3.0, 4.0, None));
-        multi_point.add_point(Point::new(5.0, 6.0, None));
+        multi_point.add_point(Point::new(1.0, 2.0, WGS84_SRID));
+        multi_point.add_point(Point::new(3.0, 4.0, WGS84_SRID));
+        multi_point.add_point(Point::new(5.0, 6.0, WGS84_SRID));
 
         let expected_json =
             "{\"type\":\"MultiPoint\",\"coordinates\":[[1.0,2.0],[3.0,4.0],[5.0,6.0]]}";
@@ -585,11 +601,11 @@ mod tests {
     fn test_line_string_serde() {
         let mut line_string = LineString::<Point> {
             points: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
-        line_string.add_point(Point::new(1.0, 2.0, None));
-        line_string.add_point(Point::new(3.0, 4.0, None));
-        line_string.add_point(Point::new(5.0, 6.0, None));
+        line_string.add_point(Point::new(1.0, 2.0, WGS84_SRID));
+        line_string.add_point(Point::new(3.0, 4.0, WGS84_SRID));
+        line_string.add_point(Point::new(5.0, 6.0, WGS84_SRID));
 
         let expected_json =
             "{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[3.0,4.0],[5.0,6.0]]}";
@@ -603,11 +619,11 @@ mod tests {
     fn test_multi_line_string_serde() {
         let mut multi_line_string = MultiLineString::<Point> {
             lines: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
-        multi_line_string.add_point(Point::new(1.0, 2.0, None));
-        multi_line_string.add_point(Point::new(3.0, 4.0, None));
-        multi_line_string.add_point(Point::new(5.0, 6.0, None));
+        multi_line_string.add_point(Point::new(1.0, 2.0, WGS84_SRID));
+        multi_line_string.add_point(Point::new(3.0, 4.0, WGS84_SRID));
+        multi_line_string.add_point(Point::new(5.0, 6.0, WGS84_SRID));
 
         let expected_json =
             "{\"type\":\"MultiLineString\",\"coordinates\":[[[1.0,2.0],[3.0,4.0],[5.0,6.0]]]}";
@@ -621,12 +637,12 @@ mod tests {
     fn test_polygon_serde() {
         let mut polygon = Polygon::<Point> {
             rings: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
-        polygon.add_point(Point::new(1.0, 2.0, None));
-        polygon.add_point(Point::new(3.0, 4.0, None));
-        polygon.add_point(Point::new(5.0, 6.0, None));
-        polygon.add_point(Point::new(1.0, 2.0, None));
+        polygon.add_point(Point::new(1.0, 2.0, WGS84_SRID));
+        polygon.add_point(Point::new(3.0, 4.0, WGS84_SRID));
+        polygon.add_point(Point::new(5.0, 6.0, WGS84_SRID));
+        polygon.add_point(Point::new(1.0, 2.0, WGS84_SRID));
 
         let expected_json =
             "{\"type\":\"Polygon\",\"coordinates\":[[[1.0,2.0],[3.0,4.0],[5.0,6.0],[1.0,2.0]]]}";
@@ -640,16 +656,16 @@ mod tests {
     fn test_multi_polygon_serde() {
         let mut polygon = Polygon::<PointZ> {
             rings: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
-        polygon.add_point(PointZ::new(1.0, 2.0, 3.0, None));
-        polygon.add_point(PointZ::new(4.0, 5.0, 6.0, None));
-        polygon.add_point(PointZ::new(7.0, 8.0, 9.0, None));
-        polygon.add_point(PointZ::new(1.0, 2.0, 3.0, None));
+        polygon.add_point(PointZ::new(1.0, 2.0, 3.0, WGS84_SRID));
+        polygon.add_point(PointZ::new(4.0, 5.0, 6.0, WGS84_SRID));
+        polygon.add_point(PointZ::new(7.0, 8.0, 9.0, WGS84_SRID));
+        polygon.add_point(PointZ::new(1.0, 2.0, 3.0, WGS84_SRID));
 
         let multi_polygon = MultiPolygon::<PointZ> {
             polygons: vec![polygon],
-            srid: None,
+            srid: WGS84_SRID,
         };
 
         let expected_json =
@@ -662,20 +678,20 @@ mod tests {
 
     #[test]
     fn test_geometry_collection_serde() {
-        let point = Point::new(1.0, 2.0, None);
+        let point = Point::new(1.0, 2.0, WGS84_SRID);
         let mut line_string = LineString::<Point> {
             points: vec![],
-            srid: None,
+            srid: WGS84_SRID,
         };
-        line_string.add_point(Point::new(3.0, 4.0, None));
-        line_string.add_point(Point::new(5.0, 6.0, None));
+        line_string.add_point(Point::new(3.0, 4.0, WGS84_SRID));
+        line_string.add_point(Point::new(5.0, 6.0, WGS84_SRID));
 
         let geometry_collection = GeometryCollection::<Point> {
             geometries: vec![
                 GeometryContainer::Point(point),
                 GeometryContainer::LineString(line_string),
             ],
-            srid: None,
+            srid: WGS84_SRID,
         };
 
         let expected_json =
@@ -688,7 +704,7 @@ mod tests {
 
     #[test]
     fn test_feature_collection_serde() {
-        let point = Point::new(1.0, 2.0, None);
+        let point = Point::new(1.0, 2.0, WGS84_SRID);
 
         let feature1 = Feature::<Point, TestFeatureProperties> {
             id: None,
@@ -715,5 +731,19 @@ mod tests {
         assert_eq!(feature_collection, feature_collection_from_json);
         let feature_collection_json = serde_json::to_string(&feature_collection).unwrap();
         assert_eq!(expected_json, feature_collection_json);
+    }
+
+    #[test]
+    fn test_non_wgs84_serde() {
+        let point = Point::new(72.0, 64.0, Some(4324));
+        let point_json = serde_json::to_string(&point);
+        assert_eq!(true, point_json.is_err());
+    }
+
+    #[test]
+    fn test_no_srid_serde() {
+        let point = Point::new(72.0, 64.0, None);
+        let point_json = serde_json::to_string(&point);
+        assert_eq!(true, point_json.is_ok());
     }
 }
