@@ -1,11 +1,13 @@
 #[macro_use]
 extern crate diesel;
-#[cfg(feature = "serde")]
+#[cfg(any(feature = "serde", feature = "serde_geojson"))]
 #[macro_use]
 extern crate serde;
 
 mod ewkb;
 pub mod functions;
+#[cfg(feature = "serde_geojson")]
+mod geojson;
 mod geometrycollection;
 mod geometrycontainer;
 mod linestring;
