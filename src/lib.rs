@@ -7,6 +7,7 @@ extern crate serde;
 mod ewkb;
 pub mod functions;
 mod geometrycollection;
+mod geometrycontainer;
 mod linestring;
 mod multiline;
 mod multipoint;

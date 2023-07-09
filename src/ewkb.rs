@@ -72,22 +72,28 @@ pub struct EwkbHeader {
     pub srid: Option<u32>,
 }
 
+impl EwkbHeader {
+    pub fn expect(self, expected_type: GeometryType) -> deserialize::Result<Self> {
+        if GeometryType::from(self.g_type) != expected_type {
+            return Err(format!(
+                "Geometry {:?} is not a {:?}",
+                GeometryType::from(self.g_type),
+                expected_type
+            )
+            .into())
+        } else {
+            Ok(self)
+        }
+    }
+}
+
 pub fn read_ewkb_header<T>(
-    expected_type: GeometryType,
     cursor: &mut Cursor<&[u8]>,
 ) -> deserialize::Result<EwkbHeader>
 where
     T: byteorder::ByteOrder,
 {
     let g_type = cursor.read_u32::<T>()?;
-    if GeometryType::from(g_type) != expected_type {
-        return Err(format!(
-            "Geometry {:?} is not a {:?}",
-            GeometryType::from(g_type),
-            expected_type
-        )
-        .into());
-    }
     let mut srid = None;
     // SRID included
     if g_type & SRID == SRID {

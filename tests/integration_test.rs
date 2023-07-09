@@ -29,6 +29,7 @@ struct NewGeometrySample {
     multiline: MultiLineString<Point>,
     multipolygon: MultiPolygon<Point>,
     geometrycollection: GeometryCollection<Point>,
+    geometrycontainer: GeometryContainer<Point>,
 }
 
 #[derive(Insertable)]
@@ -60,6 +61,7 @@ struct NewGeographySample {
     multiline: MultiLineString<Point>,
     multipolygon: MultiPolygon<Point>,
     geometrycollection: GeometryCollection<Point>,
+    geometrycontainer: GeometryContainer<Point>,
 }
 
 #[derive(Queryable, Debug, PartialEq)]
@@ -76,6 +78,7 @@ struct GeometrySample {
     multiline: MultiLineString<Point>,
     multipolygon: MultiPolygon<Point>,
     geometrycollection: GeometryCollection<Point>,
+    geometrycontainer: GeometryContainer<Point>,
 }
 
 #[derive(Queryable, Debug, PartialEq)]
@@ -109,6 +112,7 @@ struct GeographySample {
     multiline: MultiLineString<Point>,
     multipolygon: MultiPolygon<Point>,
     geometrycollection: GeometryCollection<Point>,
+    geometrycontainer: GeometryContainer<Point>,
 }
 
 table! {
@@ -127,6 +131,7 @@ table! {
         multiline -> Geometry,
         multipolygon -> Geometry,
         geometrycollection -> Geometry,
+        geometrycontainer -> Geometry,
     }
 }
 
@@ -167,6 +172,7 @@ table! {
         multiline -> Geography,
         multipolygon -> Geography,
         geometrycollection -> Geography,
+        geometrycontainer -> Geography,
     }
 }
 fn establish_connection() -> PgConnection {
@@ -199,7 +205,8 @@ fn initialize() -> PgConnection {
     multipoint        geometry(MultiPoint,4326) NOT NULL,
     multiline         geometry(MultiLineString,4326) NOT NULL,
     multipolygon      geometry(MultiPolygon,4326) NOT NULL,
-    geometrycollection geometry(GeometryCollection,4326) NOT NULL
+    geometrycollection geometry(GeometryCollection,4326) NOT NULL,
+    geometrycontainer  geometry(Geometry,4326) NOT NULL
 )",
         )
         .execute(&mut conn);
@@ -228,7 +235,8 @@ fn initialize() -> PgConnection {
     multipoint        geography(MultiPoint,4326) NOT NULL,
     multiline         geography(MultiLineString,4326) NOT NULL,
     multipolygon      geography(MultiPolygon,4326) NOT NULL,
-    geometrycollection geography(GeometryCollection,4326) NOT NULL
+    geometrycollection geography(GeometryCollection,4326) NOT NULL,
+    geometrycontainer  geography(Geometry,4326) NOT NULL
 )",
         )
         .execute(&mut conn);
@@ -371,6 +379,7 @@ fn smoke_test() {
         multiline: multiline,
         multipolygon: multipolygon,
         geometrycollection: new_geometry_collection(),
+        geometrycontainer: GeometryContainer::Point(new_point(72.0, 64.0))
     };
     let point_from_db: GeometrySample = diesel::insert_into(geometry_samples::table)
         .values(&sample)
@@ -431,7 +440,7 @@ fn geography_smoke_test() {
         point_m: new_point_m(72.0, 64.0, 11.0),
         point_zm: new_point_zm(72.0, 64.0, 10.0, 11.0),
         linestring: new_line(vec![(72.0, 64.0), (73.0, 64.0)]),
-        polygon: polygon,
+        polygon: polygon.clone(),
         multipoint: MultiPoint {
             points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
             srid: Some(4326),
@@ -439,6 +448,7 @@ fn geography_smoke_test() {
         multiline: multiline,
         multipolygon: multipolygon,
         geometrycollection: new_geometry_collection(),
+        geometrycontainer: GeometryContainer::Polygon(polygon)
     };
     let point_from_db: GeographySample = diesel::insert_into(geography_samples::table)
         .values(&sample)
@@ -592,6 +602,7 @@ macro_rules! operator_test {
                 multiline: multiline,
                 multipolygon: multipolygon,
                 geometrycollection: new_geometry_collection(),
+                geometrycontainer: GeometryContainer::LineString(new_line(vec![(72.0, 64.0), (73.0, 64.0)])),
             };
             let _ = diesel::insert_into(geometry_samples::table)
                 .values(&sample)
