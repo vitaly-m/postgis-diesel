@@ -773,3 +773,31 @@ fn within_test() {
         assert_eq!("topo_rel_test".to_string(), gs.name);
     }
 }
+
+
+#[test]
+fn d_within_test() {
+    let mut conn = initialize();
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_d_within::<Geometry, _, _, _>(
+            Point::new(3.0, 3.0, Some(4326)),
+            Point::new(4.0, 4.0, Some(4326)),
+            1.0
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(0, found_samples.len());
+    let found_samples: Vec<GeometrySample> = topo_rel_functions::table
+        .filter(st_d_within::<Geometry, _, _, _>(
+            Point::new(3.0, 3.0, Some(4326)),
+            Point::new(4.0, 4.0, Some(4326)),
+            2.0
+        ))
+        .get_results(&mut conn)
+        .unwrap();
+    assert_eq!(1, found_samples.len());
+    for gs in found_samples {
+        assert_eq!("topo_rel_test".to_string(), gs.name);
+    }
+}
+
