@@ -10,13 +10,21 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  # Label of the container job
+  runner-job:
+    # You must use a Linux environment when using service containers or container 
     runs-on: ubuntu-latest
-
+    services:
+      postgis:
+        image: postgis/postgis:15-3.3
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5433:5432
     steps:
     - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose
-#     - name: Run tests
-#       run: cargo test --verbose
+    - name: Run tests
+      run: cargo test --verbose
