@@ -2,7 +2,7 @@
 Extension for Diesel framework to support PostGIS types. 
 
 # Example of Usage
-To ensure that the `Geometry` type is in scope, read [this guide] and add `use postgis_diesel::sql_types::*` 
+To ensure that the `Geometry` type is in scope, read [this guide] and add `postgis_diesel::sql_types::*` 
 to the import_types key in your `diesel.toml` file.
 
 Assume that the table is defined like this:
