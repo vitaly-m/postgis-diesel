@@ -17,11 +17,11 @@ diesel::infix_operator!(BBStrictlyAbove, " |>> ");
 diesel::infix_operator!(BBContains, " ~ ");
 diesel::infix_operator!(BBSame, " ~= ");
 
-diesel::infix_operator!(Distance2d, " <-> ");
-diesel::infix_operator!(Distance3dTrajectories, " <-> ");
-diesel::infix_operator!(Distance2BBs, " <#> ");
-diesel::infix_operator!(DistanceNdCentroidsBBs, " <<->> ");
-diesel::infix_operator!(DistanceNdBBs, " <<#>> ");
+diesel::infix_operator!(Distance2d, " <-> ", diesel::sql_types::Double);
+diesel::infix_operator!(Distance3dTrajectories, " <-> ", diesel::sql_types::Double);
+diesel::infix_operator!(Distance2BBs, " <#> ", diesel::sql_types::Double);
+diesel::infix_operator!(DistanceNdCentroidsBBs, " <<->> ", diesel::sql_types::Double);
+diesel::infix_operator!(DistanceNdBBs, " <<#>> ", diesel::sql_types::Double);
 
 sql_function! {
     /// ST_Intersects returns TRUE if the intersection of the geometries or geographies is non-empty.
