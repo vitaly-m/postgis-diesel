@@ -1,4 +1,3 @@
-use crate::sql_types::Geography;
 use diesel::expression::AsExpression;
 use diesel::sql_types::SqlType;
 use diesel::Expression;
