@@ -6,6 +6,7 @@ extern crate serde;
 
 mod ewkb;
 pub mod functions;
+pub mod functions_nullable;
 #[cfg(feature = "serde_geojson")]
 mod geojson;
 mod geometrycollection;

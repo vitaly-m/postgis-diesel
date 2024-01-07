@@ -5,12 +5,11 @@ use std::env;
 use std::sync::Once;
 
 use diesel::pg::PgConnection;
-use diesel::sql_types::Text;
 use diesel::{Connection, IntoSql};
 use diesel::{QueryDsl, RunQueryDsl};
 use dotenvy::dotenv;
 
-use postgis_diesel::functions::*;
+use postgis_diesel::functions_nullable::*;
 use postgis_diesel::sql_types::{Geography, Geometry};
 use postgis_diesel::types::*;
 
@@ -76,19 +75,22 @@ fn initialize() -> PgConnection {
 fn intersect_3d_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_3d_intersects(
-            PointZ::new(0.0, 0.0, 2.0, Some(4326)),
-            LineString::new(Some(4326))
-                .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
-                .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
-                .to_owned(),
-        ))
+        .filter(
+            st_3d_intersects::<Option<PointZ>, LineString<PointZ>>(
+                None,
+                LineString::new(Some(4326))
+                    .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
+                    .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
+                    .to_owned(),
+            )
+            .eq(true),
+        )
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_3d_intersects(
-            PointZ::new(0.0, 0.0, 1.0, Some(4326)),
+        .filter(st_3d_intersects::<Option<PointZ>, LineString<PointZ>>(
+            Some(PointZ::new(0.0, 0.0, 1.0, Some(4326))),
             LineString::new(Some(4326))
                 .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
                 .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
@@ -106,7 +108,7 @@ fn intersect_3d_test() {
 fn contains_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_contains(
+        .filter(st_contains::<Polygon<Point>, Option<Point>>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -114,7 +116,7 @@ fn contains_test() {
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .to_owned(),
-            Point::new(3.0, 1.0, Some(4326)),
+            None,
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -128,7 +130,7 @@ fn contains_test() {
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .to_owned(),
-            Point::new(1.0, 1.0, Some(4326)),
+            Some(Point::new(1.0, 1.0, Some(4326))),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -142,7 +144,7 @@ fn contains_test() {
 fn contains_properly_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_contains_properly(
+        .filter(st_contains_properly::<Polygon<Point>, Option<Point>>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -150,20 +152,22 @@ fn contains_properly_test() {
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .to_owned(),
-            Point::new(3.0, 1.0, Some(4326)),
+            None,
         ))
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_contains_properly(
-            Polygon::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .to_owned(),
+        .filter(st_contains_properly::<Option<Polygon<Point>>, Point>(
+            Some(
+                Polygon::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .to_owned(),
+            ),
             Point::new(1.0, 1.0, Some(4326)),
         ))
         .get_results(&mut conn)
@@ -178,8 +182,8 @@ fn contains_properly_test() {
 fn covered_by_geometry_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_covered_by::<Geometry, Point, Polygon<Point>>(
-            Point::new(3.0, 1.0, Some(4326)),
+        .filter(st_covered_by::<Geometry, Option<Point>, Polygon<Point>>(
+            None,
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -192,15 +196,17 @@ fn covered_by_geometry_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_covered_by::<Geometry, Point, Polygon<Point>>(
+        .filter(st_covered_by::<Geometry, Point, Option<Polygon<Point>>>(
             Point::new(1.0, 1.0, Some(4326)),
-            Polygon::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .to_owned(),
+            Some(
+                Polygon::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -214,8 +220,8 @@ fn covered_by_geometry_test() {
 fn covered_by_geography_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_covered_by::<Geography, Point, Polygon<Point>>(
-            Point::new(3.0, 1.0, Some(4326)),
+        .filter(st_covered_by::<Geography, Option<Point>, Polygon<Point>>(
+            None,
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -228,15 +234,21 @@ fn covered_by_geography_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_covered_by::<Geography, Point, Polygon<Point>>(
-            Point::new(1.0, 1.0, Some(4326)),
-            Polygon::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .to_owned(),
+        .filter(st_covered_by::<
+            Geography,
+            Option<Point>,
+            Option<Polygon<Point>>,
+        >(
+            Some(Point::new(1.0, 1.0, Some(4326))),
+            Some(
+                Polygon::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -250,7 +262,7 @@ fn covered_by_geography_test() {
 fn covers_geometry_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_covers::<Geometry, Polygon<Point>, Point>(
+        .filter(st_covers::<Geometry, Polygon<Point>, Option<Point>>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -258,22 +270,26 @@ fn covers_geometry_test() {
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .to_owned(),
-            Point::new(3.0, 1.0, Some(4326)),
+            None,
         ))
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_covers::<Geometry, Polygon<Point>, Point>(
-            Polygon::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .to_owned(),
-            Point::new(1.0, 1.0, Some(4326)),
-        ))
+        .filter(
+            st_covers::<Geometry, Option<Polygon<Point>>, Option<Point>>(
+                Some(
+                    Polygon::new(Some(4326))
+                        .add_point(Point::new(0.0, 0.0, Some(4326)))
+                        .add_point(Point::new(0.0, 2.0, Some(4326)))
+                        .add_point(Point::new(2.0, 2.0, Some(4326)))
+                        .add_point(Point::new(2.0, 0.0, Some(4326)))
+                        .add_point(Point::new(0.0, 0.0, Some(4326)))
+                        .to_owned(),
+                ),
+                Some(Point::new(1.0, 1.0, Some(4326))),
+            ),
+        )
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(1, found_samples.len());
@@ -286,7 +302,7 @@ fn covers_geometry_test() {
 fn coveres_geography_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_covers::<Geography, Polygon<Point>, Point>(
+        .filter(st_covers::<Geography, Polygon<Point>, Option<Point>>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -294,20 +310,22 @@ fn coveres_geography_test() {
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .to_owned(),
-            Point::new(3.0, 1.0, Some(4326)),
+            None,
         ))
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_covers::<Geography, Polygon<Point>, Point>(
-            Polygon::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .to_owned(),
+        .filter(st_covers::<Geography, Option<Polygon<Point>>, Point>(
+            Some(
+                Polygon::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .to_owned(),
+            ),
             Point::new(1.0, 1.0, Some(4326)),
         ))
         .get_results(&mut conn)
@@ -322,11 +340,8 @@ fn coveres_geography_test() {
 fn crosses_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_crosses::<LineString<Point>, LineString<Point>>(
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
+        .filter(st_crosses::<Option<LineString<Point>>, LineString<Point>>(
+            None,
             LineString::new(Some(4326))
                 .add_point(Point::new(1.0, 0.0, Some(4326)))
                 .add_point(Point::new(1.0, 2.0, Some(4326)))
@@ -336,15 +351,17 @@ fn crosses_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_crosses::<LineString<Point>, LineString<Point>>(
+        .filter(st_crosses::<LineString<Point>, Option<LineString<Point>>>(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
                 .to_owned(),
-            LineString::new(Some(4326))
-                .add_point(Point::new(-1.0, 1.0, Some(4326)))
-                .add_point(Point::new(1.0, 1.0, Some(4326)))
-                .to_owned(),
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(-1.0, 1.0, Some(4326)))
+                    .add_point(Point::new(1.0, 1.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -358,8 +375,8 @@ fn crosses_test() {
 fn disjoint_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_disjoint::<Point, LineString<Point>>(
-            Point::new(0.0, 0.0, Some(4326)),
+        .filter(st_disjoint::<Option<Point>, LineString<Point>>(
+            None,
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -369,12 +386,14 @@ fn disjoint_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_disjoint::<Point, LineString<Point>>(
-            Point::new(0.0, 0.0, Some(4326)),
-            LineString::new(Some(4326))
-                .add_point(Point::new(2.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
+        .filter(st_disjoint::<Option<Point>, Option<LineString<Point>>>(
+            Some(Point::new(0.0, 0.0, Some(4326))),
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(2.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -388,11 +407,8 @@ fn disjoint_test() {
 fn equals_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_equals::<LineString<Point>, LineString<Point>>(
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
+        .filter(st_equals::<Option<LineString<Point>>, LineString<Point>>(
+            None,
             LineString::new(Some(4326))
                 .add_point(Point::new(1.0, 0.0, Some(4326)))
                 .add_point(Point::new(1.0, 2.0, Some(4326)))
@@ -402,16 +418,18 @@ fn equals_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_equals::<LineString<Point>, LineString<Point>>(
+        .filter(st_equals::<LineString<Point>, Option<LineString<Point>>>(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
                 .to_owned(),
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 1.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 1.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -425,8 +443,8 @@ fn equals_test() {
 fn intersects_geometry_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_intersects::<Geometry, Point, LineString<Point>>(
-            Point::new(0.0, 0.0, Some(4326)),
+        .filter(st_intersects::<Geometry, Option<Point>, LineString<Point>>(
+            Some(Point::new(0.0, 0.0, Some(4326))),
             LineString::new(Some(4326))
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -436,12 +454,14 @@ fn intersects_geometry_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_intersects::<Geometry, Point, LineString<Point>>(
+        .filter(st_intersects::<Geometry, Point, Option<LineString<Point>>>(
             Point::new(0.0, 0.0, Some(4326)),
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -455,24 +475,30 @@ fn intersects_geometry_test() {
 fn intersects_geography_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_intersects::<Geography, Point, LineString<Point>>(
-            Point::new(0.0, 0.0, Some(4326)),
-            LineString::new(Some(4326))
-                .add_point(Point::new(2.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
-        ))
+        .filter(
+            st_intersects::<Geography, Option<Point>, LineString<Point>>(
+                None,
+                LineString::new(Some(4326))
+                    .add_point(Point::new(2.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .to_owned(),
+            ),
+        )
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_intersects::<Geography, Point, LineString<Point>>(
-            Point::new(0.0, 0.0, Some(4326)),
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
-        ))
+        .filter(
+            st_intersects::<Geography, Point, Option<LineString<Point>>>(
+                Point::new(0.0, 0.0, Some(4326)),
+                Some(
+                    LineString::new(Some(4326))
+                        .add_point(Point::new(0.0, 0.0, Some(4326)))
+                        .add_point(Point::new(0.0, 2.0, Some(4326)))
+                        .to_owned(),
+                ),
+            ),
+        )
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(1, found_samples.len());
@@ -486,46 +512,41 @@ fn line_crossing_direction_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(
-            1.into_sql::<diesel::sql_types::Integer>()
-                .eq(st_line_crossing_direction::<
-                    LineString<Point>,
-                    LineString<Point>,
-                >(
-                    LineString::new(Some(4326))
-                        .add_point(Point::new(25.0, 169.0, Some(4326)))
-                        .add_point(Point::new(89.0, 114.0, Some(4326)))
-                        .add_point(Point::new(40.0, 70.0, Some(4326)))
-                        .add_point(Point::new(86.0, 43.0, Some(4326)))
-                        .to_owned(),
-                    LineString::new(Some(4326))
-                        .add_point(Point::new(20.0, 140.0, Some(4326)))
-                        .add_point(Point::new(71.0, 74.0, Some(4326)))
-                        .add_point(Point::new(161.0, 53.0, Some(4326)))
-                        .to_owned(),
-                )),
+            Some(1).into_sql().eq(st_line_crossing_direction::<
+                Option<LineString<Point>>,
+                LineString<Point>,
+            >(
+                None,
+                LineString::new(Some(4326))
+                    .add_point(Point::new(20.0, 140.0, Some(4326)))
+                    .add_point(Point::new(71.0, 74.0, Some(4326)))
+                    .add_point(Point::new(161.0, 53.0, Some(4326)))
+                    .to_owned(),
+            )),
         )
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(
-            (-1).into_sql::<diesel::sql_types::Integer>()
-                .eq(st_line_crossing_direction::<
-                    LineString<Point>,
-                    LineString<Point>,
-                >(
-                    LineString::new(Some(4326))
-                        .add_point(Point::new(25.0, 169.0, Some(4326)))
-                        .add_point(Point::new(89.0, 114.0, Some(4326)))
-                        .add_point(Point::new(40.0, 70.0, Some(4326)))
-                        .add_point(Point::new(86.0, 43.0, Some(4326)))
-                        .to_owned(),
+            Some(-1).into_sql().eq(st_line_crossing_direction::<
+                LineString<Point>,
+                Option<LineString<Point>>,
+            >(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(25.0, 169.0, Some(4326)))
+                    .add_point(Point::new(89.0, 114.0, Some(4326)))
+                    .add_point(Point::new(40.0, 70.0, Some(4326)))
+                    .add_point(Point::new(86.0, 43.0, Some(4326)))
+                    .to_owned(),
+                Some(
                     LineString::new(Some(4326))
                         .add_point(Point::new(20.0, 140.0, Some(4326)))
                         .add_point(Point::new(71.0, 74.0, Some(4326)))
                         .add_point(Point::new(161.0, 53.0, Some(4326)))
                         .to_owned(),
-                )),
+                ),
+            )),
         )
         .get_results(&mut conn)
         .unwrap();
@@ -539,11 +560,11 @@ fn line_crossing_direction_test() {
 fn ordering_equals_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_ordering_equals::<LineString<Point>, LineString<Point>>(
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
+        .filter(st_ordering_equals::<
+            Option<LineString<Point>>,
+            LineString<Point>,
+        >(
+            None,
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 1.0, Some(4326)))
@@ -554,15 +575,20 @@ fn ordering_equals_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_ordering_equals::<LineString<Point>, LineString<Point>>(
+        .filter(st_ordering_equals::<
+            LineString<Point>,
+            Option<LineString<Point>>,
+        >(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
                 .to_owned(),
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -576,13 +602,8 @@ fn ordering_equals_test() {
 fn overlaps_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_overlaps::<Polygon<Point>, LineString<Point>>(
-            Polygon::new(Some(4326))
-                .add_point(Point::new(40.0, 170.0, Some(4326)))
-                .add_point(Point::new(90.0, 30.0, Some(4326)))
-                .add_point(Point::new(180.0, 100.0, Some(4326)))
-                .add_point(Point::new(40.0, 170.0, Some(4326)))
-                .to_owned(),
+        .filter(st_overlaps::<Option<Polygon<Point>>, LineString<Point>>(
+            None,
             LineString::new(Some(4326))
                 .add_point(Point::new(10.0, 10.0, Some(4326)))
                 .add_point(Point::new(190.0, 190.0, Some(4326)))
@@ -592,7 +613,7 @@ fn overlaps_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_overlaps::<Polygon<Point>, Polygon<Point>>(
+        .filter(st_overlaps::<Polygon<Point>, Option<Polygon<Point>>>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(40.0, 170.0, Some(4326)))
                 .add_point(Point::new(90.0, 30.0, Some(4326)))
@@ -600,12 +621,14 @@ fn overlaps_test() {
                 .add_point(Point::new(40.0, 170.0, Some(4326)))
                 .to_owned(),
             //110 180, 20 60, 130 90, 110 180
-            Polygon::new(Some(4326))
-                .add_point(Point::new(110.0, 180.0, Some(4326)))
-                .add_point(Point::new(20.0, 60.0, Some(4326)))
-                .add_point(Point::new(130.0, 90.0, Some(4326)))
-                .add_point(Point::new(110.0, 180.0, Some(4326)))
-                .to_owned(),
+            Some(
+                Polygon::new(Some(4326))
+                    .add_point(Point::new(110.0, 180.0, Some(4326)))
+                    .add_point(Point::new(20.0, 60.0, Some(4326)))
+                    .add_point(Point::new(130.0, 90.0, Some(4326)))
+                    .add_point(Point::new(110.0, 180.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -619,11 +642,12 @@ fn overlaps_test() {
 fn relate_check_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_relate_check(
-            LineString::new(Some(4326))
-                .add_point(Point::new(1.0, 2.0, Some(4326)))
-                .add_point(Point::new(3.0, 4.0, Some(4326)))
-                .to_owned(),
+        .filter(st_relate_check::<
+            Option<LineString<Point>>,
+            LineString<Point>,
+            &'static str,
+        >(
+            None,
             LineString::new(Some(4326))
                 .add_point(Point::new(5.0, 6.0, Some(4326)))
                 .add_point(Point::new(7.0, 8.0, Some(4326)))
@@ -634,16 +658,24 @@ fn relate_check_test() {
         .unwrap();
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_relate_check(
-            LineString::new(Some(4326))
-                .add_point(Point::new(1.0, 2.0, Some(4326)))
-                .add_point(Point::new(3.0, 4.0, Some(4326)))
-                .to_owned(),
-            LineString::new(Some(4326))
-                .add_point(Point::new(5.0, 6.0, Some(4326)))
-                .add_point(Point::new(7.0, 8.0, Some(4326)))
-                .to_owned(),
-            "FF1FF0102",
+        .filter(st_relate_check::<
+            Option<LineString<Point>>,
+            Option<LineString<Point>>,
+            Option<&'static str>,
+        >(
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(1.0, 2.0, Some(4326)))
+                    .add_point(Point::new(3.0, 4.0, Some(4326)))
+                    .to_owned(),
+            ),
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(5.0, 6.0, Some(4326)))
+                    .add_point(Point::new(7.0, 8.0, Some(4326)))
+                    .to_owned(),
+            ),
+            Some("FF1FF0102"),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -658,11 +690,11 @@ fn relate_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(
-            "FF1FF0101".into_sql::<Text>().eq(st_relate(
-                LineString::new(Some(4326))
-                    .add_point(Point::new(1.0, 2.0, Some(4326)))
-                    .add_point(Point::new(3.0, 4.0, Some(4326)))
-                    .to_owned(),
+            Some("FF1FF0101").into_sql().eq(st_relate::<
+                Option<LineString<Point>>,
+                LineString<Point>,
+            >(
+                None,
                 LineString::new(Some(4326))
                     .add_point(Point::new(5.0, 6.0, Some(4326)))
                     .add_point(Point::new(7.0, 8.0, Some(4326)))
@@ -674,15 +706,22 @@ fn relate_test() {
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(
-            "FF1FF0102".into_sql::<Text>().eq(st_relate(
-                LineString::new(Some(4326))
-                    .add_point(Point::new(1.0, 2.0, Some(4326)))
-                    .add_point(Point::new(3.0, 4.0, Some(4326)))
-                    .to_owned(),
-                LineString::new(Some(4326))
-                    .add_point(Point::new(5.0, 6.0, Some(4326)))
-                    .add_point(Point::new(7.0, 8.0, Some(4326)))
-                    .to_owned(),
+            Some("FF1FF0102").into_sql().eq(st_relate::<
+                Option<LineString<Point>>,
+                Option<LineString<Point>>,
+            >(
+                Some(
+                    LineString::new(Some(4326))
+                        .add_point(Point::new(1.0, 2.0, Some(4326)))
+                        .add_point(Point::new(3.0, 4.0, Some(4326)))
+                        .to_owned(),
+                ),
+                Some(
+                    LineString::new(Some(4326))
+                        .add_point(Point::new(5.0, 6.0, Some(4326)))
+                        .add_point(Point::new(7.0, 8.0, Some(4326)))
+                        .to_owned(),
+                ),
             )),
         )
         .get_results(&mut conn)
@@ -697,7 +736,7 @@ fn relate_test() {
 fn relate_match_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
-        .filter(st_relate_match("101202FFF", "TTTTTTFFF"))
+        .filter(st_relate_match(Some("101202FFF"), Some("TTTTTTFFF")))
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(1, found_samples.len());
@@ -711,11 +750,13 @@ fn touches_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_touches(
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(1.0, 1.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(1.0, 1.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .to_owned(),
+            ),
             Point::new(1.0, 1.0, Some(4326)),
         ))
         .get_results(&mut conn)
@@ -723,12 +764,14 @@ fn touches_test() {
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_touches(
-            LineString::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(1.0, 1.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .to_owned(),
-            Point::new(0.0, 2.0, Some(4326)),
+            Some(
+                LineString::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(1.0, 1.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .to_owned(),
+            ),
+            Some(Point::new(0.0, 2.0, Some(4326))),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -743,7 +786,7 @@ fn within_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_within(
-            Point::new(3.0, 1.0, Some(4326)),
+            Some(Point::new(3.0, 1.0, Some(4326))),
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
@@ -757,14 +800,16 @@ fn within_test() {
     assert_eq!(0, found_samples.len());
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_within(
-            Point::new(1.0, 1.0, Some(4326)),
-            Polygon::new(Some(4326))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 2.0, Some(4326)))
-                .add_point(Point::new(2.0, 0.0, Some(4326)))
-                .add_point(Point::new(0.0, 0.0, Some(4326)))
-                .to_owned(),
+            Some(Point::new(1.0, 1.0, Some(4326))),
+            Some(
+                Polygon::new(Some(4326))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 2.0, Some(4326)))
+                    .add_point(Point::new(2.0, 0.0, Some(4326)))
+                    .add_point(Point::new(0.0, 0.0, Some(4326)))
+                    .to_owned(),
+            ),
         ))
         .get_results(&mut conn)
         .unwrap();
@@ -779,8 +824,8 @@ fn d_within_test() {
     let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = topo_rel_functions::table
         .filter(st_d_within::<Geometry, _, _, _>(
-            Point::new(3.0, 3.0, Some(4326)),
-            Point::new(4.0, 4.0, Some(4326)),
+            Some(Point::new(3.0, 3.0, Some(4326))),
+            Some(Point::new(4.0, 4.0, Some(4326))),
             1.0,
         ))
         .get_results(&mut conn)
@@ -790,7 +835,7 @@ fn d_within_test() {
         .filter(st_d_within::<Geometry, _, _, _>(
             Point::new(3.0, 3.0, Some(4326)),
             Point::new(4.0, 4.0, Some(4326)),
-            2.0,
+            Some(2.0),
         ))
         .get_results(&mut conn)
         .unwrap();
