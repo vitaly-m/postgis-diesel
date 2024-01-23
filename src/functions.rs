@@ -101,7 +101,7 @@ sql_function! {
 sql_function! {
     /// Computes a geometry covering all points within a given distance from a geometry.
     #[sql_name="ST_Buffer"]
-    fn st_buffer<G: GeoType>(geometry: G, radius_of_buffer: Double) -> G;
+    fn st_buffer<G: GeoType>(geometry: G, radius_of_buffer: Double, buffer_style_parameters: Text) -> G;
 }
 
 pub type St3DIntersects<GeomA, GeomB> = st_3d_intersects::HelperType<GeomA, GeomB>;
@@ -124,4 +124,4 @@ pub type StRelateMatch<GeomA, GeomB> = st_relate_match::HelperType<GeomA, GeomB>
 pub type StTouches<GeomA, GeomB> = st_touches::HelperType<GeomA, GeomB>;
 pub type StWithin<GeomA, GeomB> = st_within::HelperType<GeomA, GeomB>;
 pub type StDWithin<G, GeomA, GeomB, Distance> = st_d_within::HelperType<G, GeomA, GeomB, Distance>;
-pub type StBuffer<G, Geom, Radius> = st_buffer::HelperType<G, Geom, Radius>;
+pub type StBuffer<G, Geom, Radius, Text> = st_buffer::HelperType<G, Geom, Radius, Text>;
