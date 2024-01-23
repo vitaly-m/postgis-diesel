@@ -98,6 +98,11 @@ sql_function! {
     #[sql_name="ST_DWithin"]
     fn st_d_within<G: GeoType>(left: Nullable<G>, right: Nullable<G>, distance: Nullable<Double>) -> Nullable<Bool>;
 }
+sql_function! {
+    /// Computes a geometry covering all points within a given distance from a geometry.
+    #[sql_name="ST_Buffer"]
+    fn st_buffer<G: GeoType>(geometry: Nullable<G>, radius_of_buffer: Nullable<Double>) -> Nullable<G>;
+}
 
 pub type St3DIntersects<GeomA, GeomB> = st_3d_intersects::HelperType<GeomA, GeomB>;
 pub type StContains<GeomA, GeomB> = st_contains::HelperType<GeomA, GeomB>;
@@ -119,3 +124,4 @@ pub type StRelateMatch<GeomA, GeomB> = st_relate_match::HelperType<GeomA, GeomB>
 pub type StTouches<GeomA, GeomB> = st_touches::HelperType<GeomA, GeomB>;
 pub type StWithin<GeomA, GeomB> = st_within::HelperType<GeomA, GeomB>;
 pub type StDWithin<G, GeomA, GeomB, Distance> = st_d_within::HelperType<G, GeomA, GeomB, Distance>;
+pub type StBuffer<G, Geom, Radius> = st_buffer::HelperType<G, Geom, Radius>;
