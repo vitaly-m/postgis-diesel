@@ -113,7 +113,7 @@ sql_function! {
 sql_function! {
     /// Divides geometry into parts until a part can be represented using no more than max_vertices.
     #[sql_name="ST_Subdivide"]
-    fn st_subdivide<G: GeoType>(geometry: Nullable<G>, max_vertices: Integer) -> Nullable<G>;
+    fn st_subdivide<G: GeoType>(geometry: Nullable<G>, max_vertices: Integer, grid_size: Double) -> Nullable<G>;
 }
 
 pub type St3DIntersects<GeomA, GeomB> = st_3d_intersects::HelperType<GeomA, GeomB>;
@@ -139,4 +139,5 @@ pub type StDWithin<G, GeomA, GeomB, Distance> = st_d_within::HelperType<G, GeomA
 pub type StBuffer<G, Geom, Radius, Text> = st_buffer::HelperType<G, Geom, Radius, Text>;
 pub type StSegmentize<G, Geom, MaxSegmentLength> =
     st_segmentize::HelperType<G, Geom, MaxSegmentLength>;
-pub type StSubdivide<G, Geom, MaxVertices> = st_subdivide::HelperType<G, Geom, MaxVertices>;
+pub type StSubdivide<G, Geom, MaxVertices, GridSize> =
+    st_subdivide::HelperType<G, Geom, MaxVertices, GridSize>;
