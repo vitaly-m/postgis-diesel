@@ -98,6 +98,23 @@ sql_function! {
     #[sql_name="ST_DWithin"]
     fn st_d_within<G: GeoType>(left: G, right: G, distance: Double) -> Bool;
 }
+sql_function! {
+    /// Computes a geometry covering all points within a given distance from a geometry.
+    #[sql_name="ST_Buffer"]
+    fn st_buffer<G: GeoType>(geometry: G, radius_of_buffer: Double, buffer_style_parameters: Text) -> G;
+}
+sql_function! {
+    /// Returns a modified geometry having no segment longer than the given max_segment_length. Distance computation is
+    /// performed in 2d only. For geometry, length units are in units of spatial reference. For geography, units are in
+    /// meters.
+    #[sql_name="ST_Segmentize"]
+    fn st_segmentize<G: GeoType>(geometry: G, max_segment_length: Double) -> G;
+}
+sql_function! {
+    /// Divides geometry into parts until a part can be represented using no more than max_vertices.
+    #[sql_name="ST_Subdivide"]
+    fn st_subdivide<G: GeoType>(geometry: G, max_vertices: Integer, grid_size: Float8) -> G;
+}
 
 pub type St3DIntersects<GeomA, GeomB> = st_3d_intersects::HelperType<GeomA, GeomB>;
 pub type StContains<GeomA, GeomB> = st_contains::HelperType<GeomA, GeomB>;
@@ -119,3 +136,8 @@ pub type StRelateMatch<GeomA, GeomB> = st_relate_match::HelperType<GeomA, GeomB>
 pub type StTouches<GeomA, GeomB> = st_touches::HelperType<GeomA, GeomB>;
 pub type StWithin<GeomA, GeomB> = st_within::HelperType<GeomA, GeomB>;
 pub type StDWithin<G, GeomA, GeomB, Distance> = st_d_within::HelperType<G, GeomA, GeomB, Distance>;
+pub type StBuffer<G, Geom, Radius, Text> = st_buffer::HelperType<G, Geom, Radius, Text>;
+pub type StSegmentize<G, Geom, MaxSegmentLength> =
+    st_segmentize::HelperType<G, Geom, MaxSegmentLength>;
+pub type StSubdivide<G, Geom, MaxVertices, GridSize> =
+    st_subdivide::HelperType<G, Geom, MaxVertices, GridSize>;
