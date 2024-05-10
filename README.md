@@ -60,7 +60,7 @@ See [integration test](tests/integration_test.rs) for more complete example.
 4. Add `patch_file = "src/schema.patch"` to diesel.toml.
 5. Remove `src/full_schema.rs`, check that `diesel print-schema > src/schema.rs` will not add Geometry type.
 
-Example of path file:
+Example of patch file:
 ```diff
 @@ -1,12 +1,9 @@
  // @generated automatically by Diesel CLI.
