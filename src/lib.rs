@@ -4,6 +4,10 @@ extern crate diesel;
 #[macro_use]
 extern crate serde;
 
+#[cfg(feature = "schemars")]
+#[macro_use]
+extern crate schemars;
+
 mod ewkb;
 pub mod functions;
 pub mod functions_nullable;
