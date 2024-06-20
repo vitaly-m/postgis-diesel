@@ -13,7 +13,7 @@ use diesel::sql_types::SingleValue;
 ///    }
 ///}
 /// ```
-#[derive(SqlType, QueryId)]
+#[derive(SqlType, QueryId, Clone, Copy)]
 #[diesel(postgres_type(name = "geometry"))]
 pub struct Geometry;
 
@@ -29,7 +29,7 @@ pub struct Geometry;
 ///    }
 ///}
 /// ```
-#[derive(SqlType, QueryId)]
+#[derive(SqlType, QueryId, Clone, Copy)]
 #[diesel(postgres_type(name = "geography"))]
 pub struct Geography;
 
