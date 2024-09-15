@@ -115,6 +115,28 @@ define_sql_function! {
     #[sql_name="ST_Subdivide"]
     fn st_subdivide<G: GeoType>(geometry: Nullable<G>, max_vertices: Integer, grid_size: Float8) -> Nullable<G>;
 }
+
+//Geometry Accessors****************************************************************
+define_sql_function! {
+    /// The inherent dimension of this Geometry object, which must be less than or equal to the coordinate dimension.
+    #[sql_name="ST_Dimension"]
+    fn st_dimensions(geometry: Nullable<Geometry>) -> Nullable<Integer>;
+}
+define_sql_function! {
+    /// Returns the last point of a LINESTRING geometry as a POINT.
+    #[sql_name="ST_EndPoint"]
+    fn st_end_point(geometry: Nullable<Geometry>) -> Nullable<Geometry>;
+}
+define_sql_function! {
+    /// Returns a geometry representing the double precision (float8) bounding box of the supplied geometry.
+    #[sql_name="ST_Envelope"]
+    fn st_envelope(geometry: Nullable<Geometry>) -> Nullable<Geometry>;
+}
+define_sql_function! {
+    /// Returns a line string representing the exterior ring of the POLYGON geometry. Return NULL if the geometry is not a polygon. Will not work with MULTIPOLYGON.
+    #[sql_name="ST_ExteriorRing"]
+    fn st_exterior_ring(geometry: Nullable<Geometry>) -> Nullable<Geometry>;
+}
 define_sql_function! {
     /// Return the X coordinate of the point, or NULL if not available. Input must be a point.
     #[sql_name="ST_X"]
@@ -124,4 +146,9 @@ define_sql_function! {
     /// Return the Y coordinate of the point, or NULL if not available. Input must be a point.
     #[sql_name="ST_Y"]
     fn st_y(geometry: Nullable<Geometry>) -> Nullable<Double>;
+}
+define_sql_function! {
+    /// Return the Z coordinate of the point, or NULL if not available. Input must be a point.
+    #[sql_name="ST_Z"]
+    fn st_z(geometry: Nullable<Geometry>) -> Nullable<Double>;
 }
