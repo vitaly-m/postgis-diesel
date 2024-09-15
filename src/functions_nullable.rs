@@ -115,3 +115,13 @@ define_sql_function! {
     #[sql_name="ST_Subdivide"]
     fn st_subdivide<G: GeoType>(geometry: Nullable<G>, max_vertices: Integer, grid_size: Float8) -> Nullable<G>;
 }
+define_sql_function! {
+    /// Return the X coordinate of the point, or NULL if not available. Input must be a point.
+    #[sql_name="ST_X"]
+    fn st_x(geometry: Nullable<Geometry>) -> Nullable<Double>;
+}
+define_sql_function! {
+    /// Return the Y coordinate of the point, or NULL if not available. Input must be a point.
+    #[sql_name="ST_Y"]
+    fn st_y(geometry: Nullable<Geometry>) -> Nullable<Double>;
+}
