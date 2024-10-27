@@ -138,6 +138,126 @@ define_sql_function! {
     fn st_exterior_ring(geometry: Geometry) -> Nullable<Geometry>;
 }
 define_sql_function! {
+    /// Return the 1-based Nth geometry if the geometry is a GEOMETRYCOLLECTION, (MULTI)POINT, (MULTI)LINESTRING, MULTICURVE or (MULTI)POLYGON, POLYHEDRALSURFACE Otherwise, return NULL.
+    #[sql_name="ST_GeometryN"]
+    fn st_geometry_n(geometry: Geometry, n: Integer) -> Nullable<Geometry>;
+}
+define_sql_function! {
+    /// Return the Nth interior linestring ring of the polygon geometry. Return NULL if the geometry is not a polygon or the given N is out of range.
+    #[sql_name="ST_InteriorRingN"]
+    fn st_interior_ring_n(geometry: Geometry, n: Integer) -> Nullable<Geometry>;
+}
+define_sql_function! {
+    /// Returns TRUE if the LINESTRING's start and end points are coincident. For Polyhedral surface is closed (volumetric). 
+    #[sql_name="ST_IsClosed"]
+    fn st_is_closed(geometry: Geometry) -> Bool;
+}
+define_sql_function! {
+    /// Returns TRUE if the argument is a collection (MULTI*, GEOMETRYCOLLECTION, ...)
+    #[sql_name="ST_IsCollection"]
+    fn st_is_collection(geometry: Geometry) -> Bool;
+}
+define_sql_function! {
+    /// Returns true if this Geometry is an empty geometrycollection, polygon, point etc.
+    #[sql_name="ST_IsEmpty"]
+    fn st_is_empty(geometry: Geometry) -> Bool;
+}
+define_sql_function! {
+    /// Returns TRUE if this LINESTRING is both closed and simple.
+    #[sql_name="ST_IsRing"]
+    fn st_is_ring(geometry: Geometry) -> Bool;
+}
+define_sql_function! {
+    /// Returns (TRUE) if this Geometry has no anomalous geometric points, such as self intersection or self tangency.
+    #[sql_name="ST_IsSimple"]
+    fn st_is_simple(geometry: Geometry) -> Bool;
+}
+define_sql_function! {
+    /// Returns true if the ST_Geometry is well formed.
+    #[sql_name="ST_IsValid"]
+    fn st_is_valid(geometry: Geometry) -> Bool;
+}
+define_sql_function! {
+    /// Returns true if the ST_Geometry is well formed.
+    #[sql_name="ST_IsValid"]
+    fn st_is_valid_flags(geometry: Geometry, flags: Integer) -> Bool;
+}
+define_sql_function! {
+    /// Returns text stating if a geometry is valid or not and if not valid, a reason why.
+    #[sql_name="ST_IsValidReason"]
+    fn st_is_valid_reason(geometry: Geometry) -> Text;
+}
+define_sql_function! {
+    /// Returns text stating if a geometry is valid or not and if not valid, a reason why.
+    #[sql_name="ST_IsValidReason"]
+    fn st_is_valid_reason_flags(geometry: Geometry, flags: Integer) -> Text;
+}
+define_sql_function! {
+    /// Return the M coordinate of the point, or NULL if not available. Input must be a point.
+    #[sql_name="ST_M"]
+    fn st_m(geometry: Geometry) -> Nullable<Double>;
+}
+define_sql_function! {
+    /// Returns coordinate dimension of the geometry as a small int. Values are: 2,3 or 4.
+    #[sql_name="ST_NDims"]
+    fn st_n_dims(geometry: Geometry) -> SmallInt;
+}
+define_sql_function! {
+    /// Return the number of points (vertexes) in a geometry. 
+    #[sql_name="ST_NPoints"]
+    fn st_n_points(geometry: Geometry) -> Integer;
+}
+define_sql_function! {
+    /// If the geometry is a polygon or multi-polygon returns the number of rings.
+    #[sql_name="ST_NRings"]
+    fn st_n_rings(geometry: Geometry) -> Integer;
+}
+define_sql_function! {
+    /// If geometry is a GEOMETRYCOLLECTION (or MULTI*) return the number of geometries, for single geometries will return 1.
+    #[sql_name="ST_NumGeometries"]
+    fn st_num_geometries(geometry: Geometry) -> Integer;
+}
+define_sql_function! {
+    /// Return the number of interior rings of the a polygon in the geometry. This will work with POLYGON and return NULL for a MULTIPOLYGON type or any other type.
+    #[sql_name="ST_NumInteriorRings"]
+    fn st_num_interior_rings(geometry: Geometry) -> Nullable<Integer>;
+}
+define_sql_function! {
+    /// Return the number of interior rings of the first polygon in the geometry. Synonym to ST_NumInteriorRings.
+    #[sql_name="ST_NumInteriorRing"]
+    fn st_num_interior_ring(geometry: Geometry) -> Nullable<Integer>;
+}
+define_sql_function! {
+    /// Return the number of faces on a Polyhedral Surface. Will return null for non-polyhedral geometries.
+    #[sql_name="ST_NumPatches"]
+    fn st_num_patches(geometry: Geometry) -> Nullable<Integer>;
+}
+define_sql_function! {
+    /// Return the number of points in an ST_LineString or ST_CircularString value.
+    #[sql_name="ST_NumPoints"]
+    fn st_num_points(geometry: Geometry) -> Nullable<Integer>;
+}
+define_sql_function! {
+    /// Return the 1-based Nth geometry (face) if the geometry is a POLYHEDRALSURFACE, POLYHEDRALSURFACEM. Otherwise, return NULL.
+    #[sql_name="ST_PatchN"]
+    fn st_patch_n(geometry: Geometry, n: Integer) -> Nullable<Geometry>;
+}
+define_sql_function! {
+    /// Return the Nth point in the first linestring or circular linestring in the geometry. Return NULL if there is no linestring in the geometry.
+    #[sql_name="ST_PointN"]
+    fn st_point_n(geometry: Geometry, n: Integer) -> Nullable<Geometry>;
+}
+define_sql_function! {
+    /// Returns the first point of a LINESTRING geometry as a POINT.
+    #[sql_name="ST_StartPoint"]
+    fn st_start_point(geometry: Geometry) -> Nullable<Geometry>;
+}
+define_sql_function! {
+    /// Returns a text summary of the contents of the geometry.
+    #[sql_name="ST_Summary"]
+    fn st_summary<G: GeoType>(geometry: G) -> Text;
+}
+define_sql_function! {
     /// Return the X coordinate of the point, or NULL if not available. Input must be a point.
     #[sql_name="ST_X"]
     fn st_x(geometry: Geometry) -> Double;
@@ -151,4 +271,9 @@ define_sql_function! {
     /// Return the Z coordinate of the point, or NULL if not available. Input must be a point.
     #[sql_name="ST_Z"]
     fn st_z(geometry: Geometry) -> Nullable<Double>;
+}
+define_sql_function! {
+    /// Returns ZM (dimension semantic) flag of the geometries as a small int. Values are: 0=2d, 1=3dm, 2=3dz, 3=4d.
+    #[sql_name="ST_Zmflag"]
+    fn st_zmflag(geometry: Geometry) -> SmallInt;
 }

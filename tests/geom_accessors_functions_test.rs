@@ -10,7 +10,7 @@ use diesel::{QueryDsl, RunQueryDsl};
 use dotenvy::dotenv;
 
 use postgis_diesel::functions::*;
-use postgis_diesel::types::{LineString, Point, PointZ, Polygon};
+use postgis_diesel::types::{LineString, MultiPoint, Point, PointM, PointZ, Polygon};
 
 use crate::diesel::ExpressionMethods;
 static INIT: Once = Once::new();
@@ -264,4 +264,169 @@ fn exterior_ring_test() {
     .first(&mut conn)
     .unwrap();
     assert_eq!(None::<LineString<Point>>, ring)
+}
+
+#[test]
+fn geometry_n_test() {
+    let mut conn = initialize();
+    let mut mpoint = MultiPoint::new(None);
+    mpoint.add_points(vec![
+        Point::new(1.0, 1.0, None),
+        Point::new(0.0, 0.0, None)]);
+    let point = diesel::select(st_geometry_n(&mpoint, 1))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(Some(Point::new(1.0, 1.0, None)), point);
+    let point = diesel::select(st_geometry_n(&mpoint, 3))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(None::<Point>, point);
+    let point = diesel::select(st_geometry_n(Point::new(1.0, 1.0, None), 3))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(None::<Point>, point);
+}
+
+#[test]
+fn is_closed_test() {
+    let mut conn = initialize();
+    let mut ls = LineString::new(None);
+    ls.add_points(vec![
+        Point::new(0.0, 0.0, None),
+        Point::new(1.0, 1.0, None),
+    ]);
+    let closed = diesel::select(st_is_closed(&ls))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(false, closed);
+    ls.add_point(Point::new(0.0, 0.0, None));
+    let closed = diesel::select(st_is_closed(&ls))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(true, closed);
+    let closed = diesel::select(st_is_closed(Point::new(0.0, 0.0, None)))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(true, closed);
+}
+
+#[test]
+fn is_collection_test() {
+    let mut conn = initialize();
+    let mp = MultiPoint::<Point>::new(None);
+    let is_c = diesel::select(st_is_collection(mp))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(true, is_c);
+    let is_c = diesel::select(st_is_collection(Point::new(0.0, 0.0, None)))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(false, is_c);
+}
+
+#[test]
+fn is_empty_test() {
+    let mut conn = initialize();
+    let mp = MultiPoint::<Point>::new(None);
+    let empty = diesel::select(st_is_empty(mp))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(true, empty);
+}
+
+#[test]
+fn is_ring_test() {
+    let mut conn = initialize();
+    let mut ls = LineString::new(None);
+    ls.add_points(vec![
+        Point::new(0.0, 0.0, None),
+        Point::new(0.0, 1.0, None),
+        Point::new(1.0, 1.0, None),
+    ]);
+    let ring = diesel::select(st_is_ring(&ls))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(false, ring);
+    ls.add_point(Point::new(0.0, 0.0, None));
+    let ring = diesel::select(st_is_ring(&ls))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(true, ring);
+}
+
+#[test]
+fn is_simple_test() {
+    let mut conn = initialize();
+    let p = Point::new(0.0, 0.0, None);
+    let simple = diesel::select(st_is_simple(p))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(true, simple);
+}
+
+#[test]
+fn is_valid_test() {
+    let mut conn = initialize();
+    let p = Point::new(0.0, 0.0, None);
+    let valid = diesel::select(st_is_valid(p))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(true, valid);
+}
+
+#[test]
+fn is_valid_reason_test() {
+    let mut conn = initialize();
+    let p = Point::new(0.0, 0.0, None);
+    let valid: String = diesel::select(st_is_valid_reason(p))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!("Valid Geometry", valid);
+}
+
+#[test]
+fn st_m_test() {
+    let mut conn = initialize();
+    let p = PointM::new(0.0, 0.0, 1.0, None);
+    let m = diesel::select(st_m(p))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(Some(1.0), m);
+}
+
+#[test]
+fn st_n_dims_test() {
+    let mut conn = initialize();
+    let p = PointM::new(0.0, 0.0, 1.0, None);
+    let d: i16 = diesel::select(st_n_dims(p))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(3, d);
+}
+
+#[test]
+fn st_n_points_test() {
+    let mut conn = initialize();
+    let np = diesel::select(st_n_points(Point::new(0.0, 0.0, None)))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(1, np);
+}
+
+#[test]
+fn st_n_rings_test() {
+    let mut conn = initialize();
+    let nr = diesel::select(st_n_rings(Point::new(0.0, 0.0, None)))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(0, nr);
+}
+
+#[test]
+fn st_num_geometries_test() {
+    let mut conn = initialize();
+    let ng = diesel::select(st_num_geometries(Point::new(0.0, 0.0, None)))
+        .first(&mut conn)
+        .unwrap();
+    assert_eq!(1, ng);
 }
