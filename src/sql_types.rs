@@ -13,7 +13,7 @@
 /// ```
 #[derive(Clone, Copy)]
 #[cfg_attr(feature = "diesel", derive(SqlType, QueryId))]
-#[cfg_attr(feature = "diesel", diesel(postgres_type(name = "geography")))]
+#[cfg_attr(feature = "diesel", diesel(postgres_type(name = "geometry")))]
 pub struct Geometry;
 
 /// SQL type which may be used in table definition.
