@@ -38,12 +38,12 @@ where
         }
     }
 
-    pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: T) -> &mut Self {
         self.points.push(point);
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
         for point in points {
             self.points.push(point);
         }

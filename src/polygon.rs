@@ -30,16 +30,16 @@ where
         }
     }
 
-    pub fn add_ring<'a>(&'a mut self) -> &mut Self {
+    pub fn add_ring(&mut self) -> &mut Self {
         self.add_ring_with_capacity(0)
     }
 
-    pub fn add_ring_with_capacity<'a>(&'a mut self, cap: usize) -> &mut Self {
+    pub fn add_ring_with_capacity(&mut self, cap: usize) -> &mut Self {
         self.rings.push(Vec::with_capacity(cap));
         self
     }
 
-    pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: T) -> &mut Self {
         if self.rings.last().is_none() {
             self.add_ring();
         }
@@ -47,7 +47,7 @@ where
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
         if self.rings.last().is_none() {
             self.add_ring();
         }

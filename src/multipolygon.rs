@@ -30,11 +30,11 @@ where
         }
     }
 
-    pub fn add_empty_polygon<'a>(&'a mut self) -> &mut Self {
+    pub fn add_empty_polygon(&mut self) -> &mut Self {
         self.add_empty_polygon_with_capacity(0)
     }
 
-    pub fn add_empty_polygon_with_capacity<'a>(&'a mut self, cap: usize) -> &mut Self {
+    pub fn add_empty_polygon_with_capacity(&mut self, cap: usize) -> &mut Self {
         self.polygons.push(Polygon {
             rings: Vec::with_capacity(cap),
             srid: self.srid,
@@ -42,7 +42,7 @@ where
         self
     }
 
-    pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: T) -> &mut Self {
         if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
@@ -50,7 +50,7 @@ where
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
         if self.polygons.is_empty() {
             self.add_empty_polygon();
         }

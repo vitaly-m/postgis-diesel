@@ -33,13 +33,13 @@ where
         }
     }
 
-    pub fn add_geometry<'a>(&'a mut self, geometry: GeometryContainer<T>) -> &mut Self {
+    pub fn add_geometry(&mut self, geometry: GeometryContainer<T>) -> &mut Self {
         self.geometries.push(geometry);
         self
     }
 
-    pub fn add_geometries<'a>(
-        &'a mut self,
+    pub fn add_geometries(
+        &mut self,
         geometries: impl IntoIterator<Item = GeometryContainer<T>>,
     ) -> &mut Self {
         for gc in geometries {

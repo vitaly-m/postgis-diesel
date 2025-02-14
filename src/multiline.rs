@@ -32,16 +32,16 @@ where
         }
     }
 
-    pub fn add_line<'a>(&'a mut self) -> &mut Self {
+    pub fn add_line(&mut self) -> &mut Self {
         self.add_line_with_cap(0)
     }
 
-    pub fn add_line_with_cap<'a>(&'a mut self, cap: usize) -> &mut Self {
+    pub fn add_line_with_cap(&mut self, cap: usize) -> &mut Self {
         self.lines.push(LineString::with_capacity(self.srid, cap));
         self
     }
 
-    pub fn add_point<'a>(&'a mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: T) -> &mut Self {
         if self.lines.last().is_none() {
             self.add_line();
         }
@@ -49,7 +49,7 @@ where
         self
     }
 
-    pub fn add_points<'a>(&'a mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
         if self.lines.last().is_none() {
             self.add_line();
         }
