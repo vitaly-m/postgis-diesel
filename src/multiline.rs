@@ -2,20 +2,19 @@ use std::fmt::Debug;
 use std::io::Cursor;
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use diesel::{
-    deserialize::{self, FromSql},
-    pg::{self, Pg},
-    serialize::{self, IsNull, Output, ToSql},
-};
 
+#[cfg(feature = "diesel")]
 use crate::{
-    ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{read_ewkb_header, write_ewkb_header},
     linestring::write_linestring,
+    points::read_point_coordinates,
+};
+use crate::{
+    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     points::Dimension,
     types::{LineString, MultiLineString, PointT},
 };
 
-use crate::points::read_point_coordinates;
 use crate::sql_types::*;
 
 impl<T> MultiLineString<T>
@@ -83,29 +82,38 @@ where
     }
 }
 
-impl<T> ToSql<Geometry, Pg> for MultiLineString<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for MultiLineString<T>
 where
     T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
 {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+    fn to_sql(
+        &self,
+        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         write_multiline(self, self.srid, out)
     }
 }
 
-impl<T> ToSql<Geography, Pg> for MultiLineString<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for MultiLineString<T>
 where
     T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
 {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+    fn to_sql(
+        &self,
+        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         write_multiline(self, self.srid, out)
     }
 }
 
-impl<T> FromSql<Geometry, Pg> for MultiLineString<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for MultiLineString<T>
 where
     T: PointT + Debug + Clone,
 {
-    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let mut r = Cursor::new(bytes.as_bytes());
         let end = r.read_u8()?;
         if end == BIG_ENDIAN {
@@ -116,20 +124,22 @@ where
     }
 }
 
-impl<T> FromSql<Geography, Pg> for MultiLineString<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for MultiLineString<T>
 where
     T: PointT + Debug + Clone,
 {
-    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
-        FromSql::<Geometry, Pg>::from_sql(bytes)
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
     }
 }
 
+#[cfg(feature = "diesel")]
 pub fn write_multiline<T>(
     multiline: &MultiLineString<T>,
     srid: Option<u32>,
-    out: &mut Output<Pg>,
-) -> serialize::Result
+    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+) -> diesel::serialize::Result
 where
     T: PointT + EwkbSerializable + Clone,
 {
@@ -139,10 +149,13 @@ where
     for line in multiline.lines.iter() {
         write_linestring(line, None, out)?;
     }
-    Ok(IsNull::No)
+    Ok(diesel::serialize::IsNull::No)
 }
 
-fn read_multiline<T, P>(cursor: &mut Cursor<&[u8]>) -> deserialize::Result<MultiLineString<P>>
+#[cfg(feature = "diesel")]
+fn read_multiline<T, P>(
+    cursor: &mut Cursor<&[u8]>,
+) -> diesel::deserialize::Result<MultiLineString<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
@@ -151,11 +164,12 @@ where
     read_multiline_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 
+#[cfg(feature = "diesel")]
 pub fn read_multiline_body<T, P>(
     g_type: u32,
     srid: Option<u32>,
     cursor: &mut Cursor<&[u8]>,
-) -> deserialize::Result<MultiLineString<P>>
+) -> diesel::deserialize::Result<MultiLineString<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,

@@ -2,21 +2,23 @@ use std::fmt::Debug;
 use std::io::Cursor;
 
 use crate::{
-    ewkb::{read_ewkb_header, write_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    points::Dimension,
+    polygon::*,
+    types::*,
+};
+
+#[cfg(feature = "diesel")]
+use crate::{
+    ewkb::{read_ewkb_header, write_ewkb_header},
     linestring::{read_linestring_body, write_linestring},
     multiline::{read_multiline_body, write_multiline},
     multipoint::{read_multi_point_body, write_multi_point},
     multipolygon::{read_multi_polygon_body, write_multi_polygon},
-    points::{read_point_coordinates, write_point, Dimension},
-    polygon::*,
-    types::*,
+    points::{read_point_coordinates, write_point},
 };
+
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use diesel::{
-    deserialize::{self, FromSql},
-    pg::{self, Pg},
-    serialize::{self, IsNull, Output, ToSql},
-};
 
 use crate::sql_types::*;
 
@@ -68,29 +70,38 @@ where
     }
 }
 
-impl<T> ToSql<Geometry, Pg> for GeometryCollection<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for GeometryCollection<T>
 where
     T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
 {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+    fn to_sql(
+        &self,
+        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         write_geometry_collection(self, self.srid, out)
     }
 }
 
-impl<T> ToSql<Geography, Pg> for GeometryCollection<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for GeometryCollection<T>
 where
     T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
 {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+    fn to_sql(
+        &self,
+        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         write_geometry_collection(self, self.srid, out)
     }
 }
 
-impl<T> FromSql<Geometry, Pg> for GeometryCollection<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for GeometryCollection<T>
 where
     T: PointT + Debug + Clone,
 {
-    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         let mut r = Cursor::new(bytes.as_bytes());
         let end = r.read_u8()?;
         if end == BIG_ENDIAN {
@@ -101,20 +112,22 @@ where
     }
 }
 
-impl<T> FromSql<Geography, Pg> for GeometryCollection<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for GeometryCollection<T>
 where
     T: PointT + Debug + Clone,
 {
-    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
-        FromSql::<Geometry, Pg>::from_sql(bytes)
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
     }
 }
 
+#[cfg(feature = "diesel")]
 pub fn write_geometry_collection<T>(
     geometrycollection: &GeometryCollection<T>,
     srid: Option<u32>,
-    out: &mut Output<Pg>,
-) -> serialize::Result
+    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+) -> diesel::serialize::Result
 where
     T: PointT + EwkbSerializable + Clone,
 {
@@ -131,12 +144,13 @@ where
             GeometryContainer::GeometryCollection(g) => write_geometry_collection(g, None, out)?,
         };
     }
-    Ok(IsNull::No)
+    Ok(diesel::serialize::IsNull::No)
 }
 
+#[cfg(feature = "diesel")]
 fn read_geometry_collection<T, P>(
     cursor: &mut Cursor<&[u8]>,
-) -> deserialize::Result<GeometryCollection<P>>
+) -> diesel::deserialize::Result<GeometryCollection<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,
@@ -145,11 +159,12 @@ where
     read_geometry_collection_body::<T, P>(g_header.g_type, g_header.srid, cursor)
 }
 
+#[cfg(feature = "diesel")]
 pub fn read_geometry_collection_body<T, P>(
     g_type: u32,
     srid: Option<u32>,
     cursor: &mut Cursor<&[u8]>,
-) -> deserialize::Result<GeometryCollection<P>>
+) -> diesel::deserialize::Result<GeometryCollection<P>>
 where
     T: byteorder::ByteOrder,
     P: PointT + Clone,

@@ -1,3 +1,4 @@
+#[cfg(feature = "diesel")]
 #[macro_use]
 extern crate diesel;
 #[cfg(any(feature = "serde", feature = "serde_geojson"))]
@@ -9,7 +10,9 @@ extern crate serde;
 extern crate schemars;
 
 mod ewkb;
+#[cfg(feature = "diesel")]
 pub mod functions;
+#[cfg(feature = "diesel")]
 pub mod functions_nullable;
 #[cfg(feature = "serde_geojson")]
 mod geojson;
@@ -19,6 +22,7 @@ mod linestring;
 mod multiline;
 mod multipoint;
 mod multipolygon;
+#[cfg(feature = "diesel")]
 pub mod operators;
 mod points;
 mod polygon;

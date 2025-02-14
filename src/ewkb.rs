@@ -1,11 +1,6 @@
 use std::io::Cursor;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
-use diesel::{
-    deserialize,
-    pg::Pg,
-    serialize::{self, IsNull, Output},
-};
 
 #[derive(Debug, PartialEq)]
 pub enum GeometryType {
@@ -46,11 +41,12 @@ pub trait EwkbSerializable {
     fn geometry_type(&self) -> u32;
 }
 
+#[cfg(feature = "diesel")]
 pub fn write_ewkb_header<T>(
     geometry: &T,
     srid: Option<u32>,
-    out: &mut Output<Pg>,
-) -> serialize::Result
+    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+) -> diesel::serialize::Result
 where
     T: EwkbSerializable,
 {
@@ -64,7 +60,7 @@ where
         }
         None => out.write_u32::<LittleEndian>(p_type)?,
     }
-    Ok(IsNull::No)
+    Ok(diesel::serialize::IsNull::No)
 }
 
 pub struct EwkbHeader {
@@ -73,23 +69,23 @@ pub struct EwkbHeader {
 }
 
 impl EwkbHeader {
-    pub fn expect(self, expected_type: GeometryType) -> deserialize::Result<Self> {
+    #[cfg(feature = "diesel")]
+    pub fn expect(self, expected_type: GeometryType) -> diesel::deserialize::Result<Self> {
         if GeometryType::from(self.g_type) != expected_type {
             return Err(format!(
                 "Geometry {:?} is not a {:?}",
                 GeometryType::from(self.g_type),
                 expected_type
             )
-            .into())
+            .into());
         } else {
             Ok(self)
         }
     }
 }
 
-pub fn read_ewkb_header<T>(
-    cursor: &mut Cursor<&[u8]>,
-) -> deserialize::Result<EwkbHeader>
+#[cfg(feature = "diesel")]
+pub fn read_ewkb_header<T>(cursor: &mut Cursor<&[u8]>) -> diesel::deserialize::Result<EwkbHeader>
 where
     T: byteorder::ByteOrder,
 {
