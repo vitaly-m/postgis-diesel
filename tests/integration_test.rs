@@ -379,7 +379,7 @@ fn smoke_test() {
         multiline: multiline,
         multipolygon: multipolygon,
         geometrycollection: new_geometry_collection(),
-        geometrycontainer: GeometryContainer::Point(new_point(72.0, 64.0))
+        geometrycontainer: GeometryContainer::Point(new_point(72.0, 64.0)),
     };
     let point_from_db: GeometrySample = diesel::insert_into(geometry_samples::table)
         .values(&sample)
@@ -448,7 +448,7 @@ fn geography_smoke_test() {
         multiline: multiline,
         multipolygon: multipolygon,
         geometrycollection: new_geometry_collection(),
-        geometrycontainer: GeometryContainer::Polygon(polygon)
+        geometrycontainer: GeometryContainer::Polygon(polygon),
     };
     let point_from_db: GeographySample = diesel::insert_into(geography_samples::table)
         .values(&sample)
@@ -602,7 +602,10 @@ macro_rules! operator_test {
                 multiline: multiline,
                 multipolygon: multipolygon,
                 geometrycollection: new_geometry_collection(),
-                geometrycontainer: GeometryContainer::LineString(new_line(vec![(72.0, 64.0), (73.0, 64.0)])),
+                geometrycontainer: GeometryContainer::LineString(new_line(vec![
+                    (72.0, 64.0),
+                    (73.0, 64.0),
+                ])),
             };
             let _ = diesel::insert_into(geometry_samples::table)
                 .values(&sample)

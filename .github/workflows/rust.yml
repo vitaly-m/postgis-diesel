@@ -28,3 +28,11 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Rust test enabling serde
+      run: cargo test --features serde --verbose
+    - name: Rust test enabling serde_geojson
+      run: cargo test --features serde_geojson --verbose
+    - name: Rust test enabling schemars
+      run: cargo test --features schemars --verbose
+    - name: Rust check disabling default features
+      run: cargo check --no-default-features --verbose

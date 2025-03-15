@@ -1,17 +1,14 @@
 use std::io::Cursor;
 
 use crate::{
-    ewkb::{read_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     types::*,
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-use diesel::{
-    deserialize::{self, FromSql},
-    pg::{self, Pg},
-    serialize::{self, IsNull, Output, ToSql},
-};
 
-use crate::{ewkb::write_ewkb_header, sql_types::*};
+#[cfg(feature = "diesel")]
+use crate::ewkb::{read_ewkb_header, write_ewkb_header};
+use crate::sql_types::*;
 
 pub enum Dimension {
     None = 0,
@@ -266,8 +263,9 @@ impl PointT for PointZM {
 
 macro_rules! impl_point_from_to_sql {
     ($g:ident, $p:ident) => {
-        impl FromSql<$g, Pg> for $p {
-            fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+        #[cfg(feature = "diesel")]
+        impl diesel::deserialize::FromSql<$g, diesel::pg::Pg> for $p {
+            fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
                 let mut r = Cursor::new(bytes.as_bytes());
                 let end = r.read_u8()?;
                 if end == BIG_ENDIAN {
@@ -278,10 +276,14 @@ macro_rules! impl_point_from_to_sql {
             }
         }
 
-        impl ToSql<$g, Pg> for $p {
-            fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+        #[cfg(feature = "diesel")]
+        impl diesel::serialize::ToSql<$g, diesel::pg::Pg> for $p {
+            fn to_sql(
+                &self,
+                out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+            ) -> diesel::serialize::Result {
                 write_point(self, self.get_srid(), out)?;
-                Ok(IsNull::No)
+                Ok(diesel::serialize::IsNull::No)
             }
         }
     };
@@ -297,16 +299,25 @@ impl_point_from_to_sql!(Geography, PointZ);
 impl_point_from_to_sql!(Geography, PointM);
 impl_point_from_to_sql!(Geography, PointZM);
 
-pub fn write_point<T>(point: &T, srid: Option<u32>, out: &mut Output<Pg>) -> serialize::Result
+#[cfg(feature = "diesel")]
+pub fn write_point<T>(
+    point: &T,
+    srid: Option<u32>,
+    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+) -> diesel::serialize::Result
 where
     T: PointT + EwkbSerializable,
 {
     write_ewkb_header(point, srid, out)?;
     write_point_coordinates(point, out)?;
-    Ok(IsNull::No)
+    Ok(diesel::serialize::IsNull::No)
 }
 
-pub fn write_point_coordinates<T>(point: &T, out: &mut Output<Pg>) -> serialize::Result
+#[cfg(feature = "diesel")]
+pub fn write_point_coordinates<T>(
+    point: &T,
+    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+) -> diesel::serialize::Result
 where
     T: PointT,
 {
@@ -318,10 +329,11 @@ where
     if point.get_m().is_some() {
         out.write_f64::<LittleEndian>(point.get_m().unwrap())?;
     }
-    Ok(IsNull::No)
+    Ok(diesel::serialize::IsNull::No)
 }
 
-fn read_point<T, P>(cursor: &mut Cursor<&[u8]>) -> deserialize::Result<P>
+#[cfg(feature = "diesel")]
+fn read_point<T, P>(cursor: &mut Cursor<&[u8]>) -> diesel::deserialize::Result<P>
 where
     T: byteorder::ByteOrder,
     P: PointT,
@@ -330,11 +342,12 @@ where
     read_point_coordinates::<T, P>(cursor, g_header.g_type, g_header.srid)
 }
 
+#[cfg(feature = "diesel")]
 pub fn read_point_coordinates<T, P>(
     cursor: &mut Cursor<&[u8]>,
     g_type: u32,
     srid: Option<u32>,
-) -> deserialize::Result<P>
+) -> diesel::deserialize::Result<P>
 where
     T: byteorder::ByteOrder,
     P: PointT,

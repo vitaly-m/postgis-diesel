@@ -36,9 +36,10 @@ impl std::error::Error for PointConstructorError {}
 ///     point: Point,
 /// }
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct Point {
@@ -58,9 +59,10 @@ pub struct Point {
 ///     point: PointZ,
 /// }
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct PointZ {
@@ -81,9 +83,10 @@ pub struct PointZ {
 ///     point: PointM,
 /// }
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct PointM {
@@ -104,9 +107,10 @@ pub struct PointM {
 ///     point: PointZM,
 /// }
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Copy, Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct PointZM {
@@ -147,9 +151,10 @@ pub trait PointT {
 ///     multipoint: MultiPoint<Point>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct MultiPoint<T> {
@@ -168,9 +173,10 @@ pub struct MultiPoint<T> {
 ///     linestring: LineString<Point>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct LineString<T> {
@@ -189,9 +195,10 @@ pub struct LineString<T> {
 ///     multilinestring: MultiLineString<LineString<Point>>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct MultiLineString<T> {
@@ -210,9 +217,10 @@ pub struct MultiLineString<T> {
 ///     polygon: Polygon<Point>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct Polygon<T> {
@@ -231,9 +239,10 @@ pub struct Polygon<T> {
 ///     multipolygon: MultiPolygon<Polygon<Point>>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct MultiPolygon<T> {
@@ -245,12 +254,21 @@ pub struct MultiPolygon<T> {
 /// Represents any type that can appear in a geometry or geography column.
 ///
 /// T is the Point type (Point or PointZ or PointM)
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "serde_geojson", derive(Deserialize))]
-#[cfg_attr(feature = "serde_geojson", serde(tag = "type", bound(deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>")))]
+#[cfg_attr(
+    feature = "serde_geojson",
+    serde(
+        tag = "type",
+        bound(
+            deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>"
+        )
+    )
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub enum GeometryContainer<T> {
     Point(T),
@@ -272,9 +290,10 @@ pub enum GeometryContainer<T> {
 ///     geometrycollection: GeometryCollection<GeometryContainer<Point>>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, FromSqlRow, AsExpression)]
-#[diesel(sql_type = Geometry)]
-#[diesel(sql_type = Geography)]
+#[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct GeometryCollection<T> {
@@ -285,7 +304,12 @@ pub struct GeometryCollection<T> {
 
 #[cfg(feature = "serde_geojson")]
 #[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(tag = "type", bound(deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>, P: serde::Deserialize<'de>"))]
+#[serde(
+    tag = "type",
+    bound(
+        deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>, P: serde::Deserialize<'de>"
+    )
+)]
 pub struct Feature<T, P: serde::Serialize> {
     pub id: Option<String>,
     pub geometry: Option<GeometryContainer<T>>,
@@ -294,7 +318,12 @@ pub struct Feature<T, P: serde::Serialize> {
 
 #[cfg(feature = "serde_geojson")]
 #[derive(Clone, Debug, PartialEq, Deserialize)]
-#[serde(tag = "type", bound(deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>, P: serde::Deserialize<'de>"))]
+#[serde(
+    tag = "type",
+    bound(
+        deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>, P: serde::Deserialize<'de>"
+    )
+)]
 pub struct FeatureCollection<T, P: serde::Serialize> {
     pub features: Vec<Feature<T, P>>,
 }
@@ -327,6 +356,5 @@ mod tests {
             let expected_schema_for_value = r#"{"$schema":"http://json-schema.org/draft-07/schema#","title":"Point","examples":[{"x":72.0,"y":64.0}],"type":"object","properties":{"x":{"type":"number"},"y":{"type":"number"}}}"#;
             assert_eq!(expected_schema_for_value, schema_for_value_json);
         }
-
     }
 }

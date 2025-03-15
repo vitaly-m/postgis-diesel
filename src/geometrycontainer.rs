@@ -2,23 +2,24 @@ use std::fmt::Debug;
 use std::io::Cursor;
 
 use crate::{
-    ewkb::{read_ewkb_header, EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    polygon::*,
+    sql_types::{Geography, Geometry},
+    types::*,
+};
+
+#[cfg(feature = "diesel")]
+use crate::{
+    ewkb::read_ewkb_header,
     geometrycollection::{read_geometry_collection_body, write_geometry_collection},
     linestring::{read_linestring_body, write_linestring},
     multiline::{read_multiline_body, write_multiline},
     multipoint::{read_multi_point_body, write_multi_point},
     multipolygon::{read_multi_polygon_body, write_multi_polygon},
     points::{read_point_coordinates, write_point},
-    polygon::*,
-    sql_types::{Geography, Geometry},
-    types::*,
 };
+
 use byteorder::{BigEndian, LittleEndian};
-use diesel::{
-    deserialize::{self, FromSql},
-    pg::{self, Pg},
-    serialize::{self, Output, ToSql},
-};
 
 impl<T> GeometryContainer<T>
 where
@@ -37,11 +38,20 @@ where
     }
 }
 
-impl<T> ToSql<Geometry, Pg> for GeometryContainer<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for GeometryContainer<T>
 where
-    T: PointT + Debug + PartialEq + Clone + EwkbSerializable + ToSql<Geometry, Pg>,
+    T: PointT
+        + Debug
+        + PartialEq
+        + Clone
+        + EwkbSerializable
+        + diesel::serialize::ToSql<Geometry, diesel::pg::Pg>,
 {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+    fn to_sql(
+        &self,
+        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         match self {
             GeometryContainer::Point(g) => write_point(g, g.get_srid(), out),
             GeometryContainer::MultiPoint(g) => write_multi_point(g, g.srid, out),
@@ -54,11 +64,20 @@ where
     }
 }
 
-impl<T> ToSql<Geography, Pg> for GeometryContainer<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for GeometryContainer<T>
 where
-    T: PointT + Debug + PartialEq + Clone + EwkbSerializable + ToSql<Geometry, Pg>,
+    T: PointT
+        + Debug
+        + PartialEq
+        + Clone
+        + EwkbSerializable
+        + diesel::serialize::ToSql<Geometry, diesel::pg::Pg>,
 {
-    fn to_sql(&self, out: &mut Output<Pg>) -> serialize::Result {
+    fn to_sql(
+        &self,
+        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+    ) -> diesel::serialize::Result {
         match self {
             GeometryContainer::Point(g) => write_point(g, g.get_srid(), out),
             GeometryContainer::MultiPoint(g) => write_multi_point(g, g.srid, out),
@@ -71,11 +90,12 @@ where
     }
 }
 
-impl<T> FromSql<Geometry, Pg> for GeometryContainer<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for GeometryContainer<T>
 where
-    T: PointT + Debug + Clone + FromSql<Geometry, Pg>,
+    T: PointT + Debug + Clone + diesel::deserialize::FromSql<Geometry, diesel::pg::Pg>,
 {
-    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
         use byteorder::ReadBytesExt;
 
         let mut cursor = Cursor::new(bytes.as_bytes());
@@ -197,11 +217,12 @@ where
     }
 }
 
-impl<T> FromSql<Geography, Pg> for GeometryContainer<T>
+#[cfg(feature = "diesel")]
+impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for GeometryContainer<T>
 where
-    T: PointT + Debug + Clone + FromSql<Geometry, Pg>,
+    T: PointT + Debug + Clone + diesel::deserialize::FromSql<Geometry, diesel::pg::Pg>,
 {
-    fn from_sql(bytes: pg::PgValue) -> deserialize::Result<Self> {
-        FromSql::<Geometry, Pg>::from_sql(bytes)
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
     }
 }

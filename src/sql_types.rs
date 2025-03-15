@@ -1,5 +1,3 @@
-use diesel::sql_types::SingleValue;
-
 /// SQL type which may be used in table definition.
 /// ```
 ///#[macro_use] extern crate diesel;
@@ -13,8 +11,9 @@ use diesel::sql_types::SingleValue;
 ///    }
 ///}
 /// ```
-#[derive(SqlType, QueryId, Clone, Copy)]
-#[diesel(postgres_type(name = "geometry"))]
+#[derive(Clone, Copy)]
+#[cfg_attr(feature = "diesel", derive(SqlType, QueryId))]
+#[cfg_attr(feature = "diesel", diesel(postgres_type(name = "geometry")))]
 pub struct Geometry;
 
 /// SQL type which may be used in table definition.
@@ -29,12 +28,16 @@ pub struct Geometry;
 ///    }
 ///}
 /// ```
-#[derive(SqlType, QueryId, Clone, Copy)]
-#[diesel(postgres_type(name = "geography"))]
+#[derive(Clone, Copy)]
+#[cfg_attr(feature = "diesel", derive(SqlType, QueryId))]
+#[cfg_attr(feature = "diesel", diesel(postgres_type(name = "geography")))]
 pub struct Geography;
 
-pub trait GeoType: SingleValue {}
+#[cfg(feature = "diesel")]
+pub trait GeoType: diesel::sql_types::SingleValue {}
 
+#[cfg(feature = "diesel")]
 impl GeoType for Geometry {}
 
+#[cfg(feature = "diesel")]
 impl GeoType for Geography {}

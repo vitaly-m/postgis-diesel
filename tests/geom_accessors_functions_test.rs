@@ -65,11 +65,19 @@ fn initialize() -> PgConnection {
         .execute(&mut conn);
         let north_sample = NewGeometrySample {
             name: "northern".to_string(),
-            point: Point { x: 1.0, y: 0.0, srid: Some(4326) },
+            point: Point {
+                x: 1.0,
+                y: 0.0,
+                srid: Some(4326),
+            },
         };
         let east_sample = NewGeometrySample {
             name: "eastern".to_string(),
-            point: Point { x: 0.0, y: 1.0, srid: Some(4326) },
+            point: Point {
+                x: 0.0,
+                y: 1.0,
+                srid: Some(4326),
+            },
         };
         let samples = vec![north_sample, east_sample];
         diesel::insert_into(geom_accessor_functions::table)
