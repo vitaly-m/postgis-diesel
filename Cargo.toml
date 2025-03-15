@@ -1,6 +1,6 @@
 [package]
 name = "postgis_diesel"
-version = "2.4.1"
+version = "2.5.0"
 authors = ["Vitaly Merenkov <vmrnkv@gmail.com>"]
 edition = "2018"
 description = "An extension for Diesel framework to support PostGIS geometry datatype."
