@@ -3,6 +3,7 @@
 use std::fmt::Debug;
 
 use crate::types::GeometryContainer;
+#[cfg(feature = "diesel")]
 use crate::write_to_read_from_sql::{WriteToSql, ReadFromSql};
 use crate::{
     ewkb::EwkbSerializable,

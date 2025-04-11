@@ -7,12 +7,12 @@ use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header},
     points::read_point_coordinates,
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     points::Dimension,
     types::{LineString, MultiLineString, PointT},
-    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 
 impl<P> MultiLineString<P>

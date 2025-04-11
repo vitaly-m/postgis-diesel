@@ -5,7 +5,6 @@ use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     polygon::*,
     types::*,
-    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 
 #[cfg(feature = "diesel")]
@@ -17,6 +16,7 @@ use crate::{
     multipoint::read_multi_point_body,
     multipolygon::read_multi_polygon_body,
     points::{read_point_coordinates, write_point},
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 
 use byteorder::{BigEndian, LittleEndian};

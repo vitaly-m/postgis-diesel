@@ -4,16 +4,17 @@ use std::io::Cursor;
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 
 #[cfg(feature = "diesel")]
-use crate::ewkb::{read_ewkb_header, write_ewkb_header};
+use crate::{
+    ewkb::{read_ewkb_header, write_ewkb_header},
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
+    points::{read_point_coordinates, write_point_coordinates}
+};
 use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     types::{PointT, Polygon},
-    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 
 use crate::points::Dimension;
-#[cfg(feature = "diesel")]
-use crate::points::{read_point_coordinates, write_point_coordinates};
 
 impl<P> Polygon<P>
 where

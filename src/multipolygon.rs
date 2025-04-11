@@ -5,12 +5,12 @@ use std::io::Cursor;
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header},
     polygon::read_polygon_body,
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     points::Dimension,
     types::*,
-    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 

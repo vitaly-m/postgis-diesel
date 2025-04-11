@@ -20,19 +20,19 @@ pub const BIG_ENDIAN: u8 = 0;
 impl From<u32> for GeometryType {
     fn from(t: u32) -> Self {
         if t & 7 == 7 {
-            return Self::GeometryCollection;
+            Self::GeometryCollection
         } else if t & 6 == 6 {
-            return Self::MultiPolygon;
+            Self::MultiPolygon
         } else if t & 5 == 5 {
-            return Self::MultiLineString;
+            Self::MultiLineString
         } else if t & 4 == 4 {
-            return Self::MultiPoint;
+            Self::MultiPoint
         } else if t & 3 == 3 {
-            return Self::Polygon;
+            Self::Polygon
         } else if t & 2 == 2 {
-            return Self::LineString;
+            Self::LineString
         } else {
-            return Self::Point;
+            Self::Point
         }
     }
 }
@@ -45,11 +45,11 @@ pub trait EwkbSerializable {
 pub fn write_ewkb_header<W, T>(
     geometry: &T,
     srid: Option<u32>,
-    out: &mut W
+    out: &mut W,
 ) -> diesel::serialize::Result
 where
     T: EwkbSerializable,
-    W: WriteBytesExt
+    W: WriteBytesExt,
 {
     out.write_u8(LITTLE_ENDIAN)?;
     let mut p_type = geometry.geometry_type();
@@ -73,12 +73,11 @@ impl EwkbHeader {
     #[cfg(feature = "diesel")]
     pub fn expect(self, expected_type: GeometryType) -> diesel::deserialize::Result<Self> {
         if GeometryType::from(self.g_type) != expected_type {
-            return Err(format!(
-                "Geometry {:?} is not a {:?}",
+            Err(format!(
+                "Geometry {:?} is not a {expected_type:?}",
                 GeometryType::from(self.g_type),
-                expected_type
             )
-            .into());
+            .into())
         } else {
             Ok(self)
         }
