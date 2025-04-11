@@ -6,7 +6,8 @@ use crate::{
     ewkb::EwkbSerializable,
     sql_types::{Geography, Geometry},
     types::{
-        GeometryCollection, GeometryContainer, LineString, MultiLineString, MultiPoint, MultiPolygon, PointT, Polygon
+        GeometryCollection, GeometryContainer, LineString, MultiLineString, MultiPoint,
+        MultiPolygon, PointT, Polygon,
     },
 };
 
@@ -49,7 +50,7 @@ impl_to_sql_geography!(
     MultiLineString<P>,
     MultiPolygon<P>,
     GeometryCollection<P>,
-	GeometryContainer<P>,
+    GeometryContainer<P>,
     LineString<P>,
     Polygon<P>
 );

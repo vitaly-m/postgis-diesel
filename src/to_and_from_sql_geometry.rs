@@ -4,7 +4,7 @@ use std::fmt::Debug;
 
 use crate::types::GeometryContainer;
 #[cfg(feature = "diesel")]
-use crate::write_to_read_from_sql::{WriteToSql, ReadFromSql};
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 use crate::{
     ewkb::EwkbSerializable,
     sql_types::Geometry,
@@ -76,7 +76,7 @@ impl_to_sql_geometry!(
     MultiLineString<P>,
     MultiPolygon<P>,
     GeometryCollection<P>,
-	GeometryContainer<P>,
+    GeometryContainer<P>,
     LineString<P>,
     Polygon<P>
 );

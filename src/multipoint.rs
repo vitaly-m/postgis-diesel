@@ -14,7 +14,6 @@ use crate::{
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 
-
 impl<P> MultiPoint<P>
 where
     P: PointT,

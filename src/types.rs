@@ -37,7 +37,10 @@ impl std::error::Error for PointConstructorError {}
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -60,7 +63,10 @@ pub struct Point {
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -84,7 +90,10 @@ pub struct PointZ {
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -108,7 +117,10 @@ pub struct PointM {
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -152,7 +164,10 @@ pub trait PointT {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -174,7 +189,10 @@ pub struct MultiPoint<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -196,7 +214,10 @@ pub struct LineString<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -218,7 +239,10 @@ pub struct MultiLineString<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -240,7 +264,10 @@ pub struct Polygon<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -255,7 +282,10 @@ pub struct MultiPolygon<T> {
 ///
 /// T is the Point type (Point or PointZ or PointM)
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -291,7 +321,10 @@ pub enum GeometryContainer<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

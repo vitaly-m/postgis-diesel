@@ -295,18 +295,22 @@ macro_rules! impl_point_from_to_sql {
         }
 
         #[cfg(feature = "postgres")]
-        impl diesel::serialize::ToSql<$g, diesel::pg::Pg> for $p
-        {
-            fn to_sql(&self, out: &mut diesel::serialize::Output<diesel::pg::Pg>) -> diesel::serialize::Result {
+        impl diesel::serialize::ToSql<$g, diesel::pg::Pg> for $p {
+            fn to_sql(
+                &self,
+                out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+            ) -> diesel::serialize::Result {
                 write_point(self, self.get_srid(), out)?;
                 Ok(diesel::serialize::IsNull::No)
             }
         }
 
         #[cfg(feature = "sqlite")]
-        impl diesel::serialize::ToSql<$g, diesel::sqlite::Sqlite> for $p
-        {
-            fn to_sql(&self, out: &mut diesel::serialize::Output<diesel::sqlite::Sqlite>) -> diesel::serialize::Result {
+        impl diesel::serialize::ToSql<$g, diesel::sqlite::Sqlite> for $p {
+            fn to_sql(
+                &self,
+                out: &mut diesel::serialize::Output<diesel::sqlite::Sqlite>,
+            ) -> diesel::serialize::Result {
                 let mut bytes = Vec::new();
                 write_point(self, self.get_srid(), &mut bytes)?;
                 out.set_value(bytes);
@@ -327,14 +331,10 @@ impl_point_from_to_sql!(Geography, PointM);
 impl_point_from_to_sql!(Geography, PointZM);
 
 #[cfg(feature = "diesel")]
-pub fn write_point<W, P>(
-    point: &P,
-    srid: Option<u32>,
-    out: &mut W,
-) -> diesel::serialize::Result
+pub fn write_point<W, P>(point: &P, srid: Option<u32>, out: &mut W) -> diesel::serialize::Result
 where
     P: PointT + EwkbSerializable,
-    W: WriteBytesExt
+    W: WriteBytesExt,
 {
     write_ewkb_header(point, srid, out)?;
     write_point_coordinates(point, out)?;
@@ -342,10 +342,7 @@ where
 }
 
 #[cfg(feature = "diesel")]
-pub fn write_point_coordinates<W, P>(
-    point: &P,
-    out: &mut W,
-) -> diesel::serialize::Result
+pub fn write_point_coordinates<W, P>(point: &P, out: &mut W) -> diesel::serialize::Result
 where
     P: PointT,
     W: std::io::Write,
