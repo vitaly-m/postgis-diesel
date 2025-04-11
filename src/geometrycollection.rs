@@ -88,7 +88,7 @@ where
 #[cfg(feature = "diesel")]
 impl<P> WriteToSql for GeometryCollection<P>
 where
-    P: PointT + Clone + EwkbSerializable,
+    P: PointT + Clone  + Debug+ EwkbSerializable,
 {
     fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
     where
@@ -117,7 +117,7 @@ fn read_geometry_collection<T, P>(
 ) -> diesel::deserialize::Result<GeometryCollection<P>>
 where
     T: byteorder::ByteOrder,
-    P: PointT + Clone,
+    P: PointT + Clone + Debug,
 {
     let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::GeometryCollection)?;
     read_geometry_collection_body::<T, P>(g_header.g_type, g_header.srid, cursor)
@@ -131,7 +131,7 @@ pub fn read_geometry_collection_body<T, P>(
 ) -> diesel::deserialize::Result<GeometryCollection<P>>
 where
     T: byteorder::ByteOrder,
-    P: PointT + Clone,
+    P: PointT + Clone + Debug,
 {
     let geometries_n = cursor.read_u32::<T>()?;
     let mut g_collection = GeometryCollection::new(srid);

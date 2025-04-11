@@ -23,6 +23,7 @@ macro_rules! impl_to_sql_geometry {
 				P: PointT + Debug + Clone,
 			{
 				fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+					println!("postgres bytes {}: {:?}", stringify!($type), bytes.as_bytes());
 					Self::read_from_sql(bytes.as_bytes())
 				}
 			}
@@ -35,6 +36,7 @@ macro_rules! impl_to_sql_geometry {
 				fn from_sql(
 					mut bytes: diesel::sqlite::SqliteValue<'_, '_, '_>,
 				) -> diesel::deserialize::Result<Self> {
+					println!("sqlite bytes {}: {:?}", stringify!($type), bytes.read_blob());
 					Self::read_from_sql(bytes.read_blob())
 				}
 			}
@@ -61,10 +63,9 @@ macro_rules! impl_to_sql_geometry {
 					&self,
 					out: &mut diesel::serialize::Output<diesel::sqlite::Sqlite>,
 				) -> diesel::serialize::Result {
-					use std::io::Cursor;
-					let mut buffer = Cursor::new(Vec::new());
+					let mut buffer = Vec::new();
 					let output = self.write_to_sql(&mut buffer)?;
-					out.set_value(buffer.into_inner());
+					out.set_value(buffer);
 					Ok(output)
 				}
 			}

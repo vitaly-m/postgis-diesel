@@ -49,7 +49,7 @@ pub fn write_ewkb_header<W, T>(
 ) -> diesel::serialize::Result
 where
     T: EwkbSerializable,
-    W: WriteBytesExt,
+    W: std::io::Write,
 {
     out.write_u8(LITTLE_ENDIAN)?;
     let mut p_type = geometry.geometry_type();

@@ -334,7 +334,7 @@ impl_point_from_to_sql!(Geography, PointZM);
 pub fn write_point<W, P>(point: &P, srid: Option<u32>, out: &mut W) -> diesel::serialize::Result
 where
     P: PointT + EwkbSerializable,
-    W: WriteBytesExt,
+    W: std::io::Write,
 {
     write_ewkb_header(point, srid, out)?;
     write_point_coordinates(point, out)?;

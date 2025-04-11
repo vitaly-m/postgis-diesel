@@ -4,18 +4,15 @@ extern crate diesel;
 use std::env;
 use std::sync::Once;
 
-#[cfg(feature = "postgres")]
 use diesel::pg::PgConnection;
-#[cfg(feature = "sqlite")]
-use diesel::SqliteConnection;
-
 use diesel::Connection;
 use diesel::{QueryDsl, RunQueryDsl};
 use dotenvy::dotenv;
 
-use crate::diesel::ExpressionMethods;
 use postgis_diesel::functions::*;
 use postgis_diesel::types::Point;
+
+use crate::diesel::ExpressionMethods;
 static INIT: Once = Once::new();
 
 #[derive(Insertable)]
@@ -44,8 +41,28 @@ table! {
     }
 }
 
-macro_rules! initialize {
-    ($conn: ident) => {
+fn establish_connection() -> PgConnection {
+    dotenv().ok();
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not set");
+
+    PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
+}
+
+fn initialize() -> PgConnection {
+    let mut conn = establish_connection();
+    INIT.call_once(|| {
+        let _ = diesel::sql_query("CREATE EXTENSION IF NOT EXISTS postgis").execute(&mut conn);
+        let _ = diesel::sql_query("DROP TABLE geom_accessor_functions").execute(&mut conn);
+
+        let _ = diesel::sql_query(
+            "CREATE TABLE geom_accessor_functions
+(
+    id                SERIAL PRIMARY KEY,
+    name              TEXT NOT NULL,
+    point             geometry(POINT, 4326) NOT NULL
+)",
+        )
+        .execute(&mut conn);
         let north_sample = NewGeometrySample {
             name: "northern".to_string(),
             point: Point {
@@ -65,65 +82,15 @@ macro_rules! initialize {
         let samples = vec![north_sample, east_sample];
         diesel::insert_into(geom_accessor_functions::table)
             .values(&samples)
-            .execute(&mut $conn)
+            .execute(&mut conn)
             .unwrap();
-    };
-}
-
-#[cfg(feature = "sqlite")]
-fn establish_sqlite_connection() -> SqliteConnection {
-    dotenv().ok();
-
-    // We delete the database file if it exists
-    let _ = std::fs::remove_file("test.sqlite");
-
-    let mut conn = SqliteConnection::establish("test.sqlite").expect("Error connecting to sqlite");
-    INIT.call_once(|| {
-        let _ = diesel::sql_query("DROP TABLE geom_accessor_functions").execute(&mut conn);
-
-        let _ = diesel::sql_query(
-            "CREATE TABLE geom_accessor_functions
-(
-    id                INTEGER PRIMARY KEY AUTOINCREMENT,
-    name              TEXT NOT NULL,
-    point             BLOB NOT NULL
-)",
-        )
-        .execute(&mut conn);
-        initialize!(conn);
-    });
-    conn
-}
-
-#[cfg(feature = "postgres")]
-fn initialize_postgres_database() -> PgConnection {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not set");
-
-    let mut conn = PgConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url));
-    INIT.call_once(|| {
-        let _ = diesel::sql_query("CREATE EXTENSION IF NOT EXISTS postgis").execute(&mut conn);
-        let _ = diesel::sql_query("DROP TABLE geom_accessor_functions").execute(&mut conn);
-
-        let _ = diesel::sql_query(
-            "CREATE TABLE geom_accessor_functions
-(
-    id                SERIAL PRIMARY KEY,
-    name              TEXT NOT NULL,
-    point             geometry(POINT, 4326) NOT NULL
-)",
-        )
-        .execute(&mut conn);
-        initialize!(conn);
     });
     conn
 }
 
 #[test]
-#[cfg(feature = "postgres")]
-fn point_x_test_postgres() {
-    let mut conn = initialize_postgres_database();
+fn point_x_test() {
+    let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = geom_accessor_functions::table
         .filter(st_x(geom_accessor_functions::point).lt(0.0))
         .get_results(&mut conn)
@@ -140,19 +107,8 @@ fn point_x_test_postgres() {
 }
 
 #[test]
-#[cfg(feature = "sqlite")]
-fn point_test_sqlite() {
-    let mut conn = establish_sqlite_connection();
-    let found_samples: Vec<GeometrySample> = geom_accessor_functions::table
-        .get_results(&mut conn)
-        .unwrap();
-    assert_eq!(2, found_samples.len());
-}
-
-#[test]
-#[cfg(feature = "postgres")]
-fn point_y_test_postgres() {
-    let mut conn = initialize_postgres_database();
+fn point_y_test() {
+    let mut conn = initialize();
     let found_samples: Vec<GeometrySample> = geom_accessor_functions::table
         .filter(st_y(geom_accessor_functions::point).lt(0.0))
         .get_results(&mut conn)

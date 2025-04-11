@@ -83,7 +83,7 @@ where
 #[cfg(feature = "diesel")]
 impl<P> WriteToSql for MultiLineString<P>
 where
-    P: PointT + EwkbSerializable,
+    P: PointT + Debug+ EwkbSerializable,
 {
     fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
     where
@@ -93,6 +93,7 @@ where
         // number of lines
         out.write_u32::<LittleEndian>(self.lines.len() as u32)?;
         for line in self.lines.iter() {
+            println!("write line: {:?}", line);
             line.write_to_sql(out)?;
         }
         Ok(diesel::serialize::IsNull::No)
@@ -121,7 +122,7 @@ fn read_multiline<T, P>(
 ) -> diesel::deserialize::Result<MultiLineString<P>>
 where
     T: byteorder::ByteOrder,
-    P: PointT + Clone,
+    P: PointT + Clone + Debug,
 {
     let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::MultiLineString)?;
     read_multiline_body::<T, P>(g_header.g_type, g_header.srid, cursor)
@@ -135,18 +136,21 @@ pub fn read_multiline_body<T, P>(
 ) -> diesel::deserialize::Result<MultiLineString<P>>
 where
     T: byteorder::ByteOrder,
-    P: PointT + Clone,
+    P: PointT + Clone + Debug,
 {
     let lines_n = cursor.read_u32::<T>()?;
     let mut multiline = MultiLineString::with_capacity(srid, lines_n as usize);
     for _i in 0..lines_n {
+        println!("read line");
         // skip 1 byte for byte order and 4 bytes for point type
         cursor.read_u8()?;
         cursor.read_u32::<T>()?;
         let points_n = cursor.read_u32::<T>()?;
         multiline.add_line_with_cap(points_n as usize);
         for _p in 0..points_n {
-            multiline.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
+            let point = read_point_coordinates::<T, P>(cursor, g_type, srid)?;
+            println!("read point {:?}", point);
+            multiline.add_point(point);
         }
     }
     Ok(multiline)

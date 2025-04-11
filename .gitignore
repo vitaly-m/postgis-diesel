@@ -5,3 +5,4 @@ Cargo.lock
 *.iml
 /prof
 test.sqlite
+integration_test.sqlite

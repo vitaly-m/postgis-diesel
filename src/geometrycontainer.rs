@@ -41,7 +41,7 @@ where
 #[cfg(feature = "diesel")]
 impl<P> WriteToSql for GeometryContainer<P>
 where
-    P: PointT + Clone + EwkbSerializable,
+    P: PointT + Clone + Debug + EwkbSerializable,
 {
     fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
     where
@@ -65,7 +65,7 @@ fn from_sql_with_endianness<E, P>(
 ) -> diesel::deserialize::Result<GeometryContainer<P>>
 where
     E: byteorder::ByteOrder,
-    P: PointT + Clone,
+    P: PointT + Clone + Debug,
 {
     let g_header = read_ewkb_header::<E>(cursor)?;
     Ok(match GeometryType::from(g_header.g_type) {
