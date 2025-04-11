@@ -61,9 +61,10 @@ macro_rules! impl_to_sql_geometry {
 					&self,
 					out: &mut diesel::serialize::Output<diesel::sqlite::Sqlite>,
 				) -> diesel::serialize::Result {
-					let mut bytes = Vec::new();
-					let output = self.write_to_sql(&mut bytes)?;
-					out.set_value(bytes);
+					use std::io::Cursor;
+					let mut buffer = Cursor::new(Vec::new());
+					let output = self.write_to_sql(&mut buffer)?;
+					out.set_value(buffer.into_inner());
 					Ok(output)
 				}
 			}
