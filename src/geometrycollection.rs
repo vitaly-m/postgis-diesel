@@ -6,25 +6,24 @@ use crate::{
     points::Dimension,
     polygon::*,
     types::*,
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 
 #[cfg(feature = "diesel")]
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header},
-    linestring::{read_linestring_body, write_linestring},
-    multiline::{read_multiline_body, write_multiline},
-    multipoint::{read_multi_point_body, write_multi_point},
-    multipolygon::{read_multi_polygon_body, write_multi_polygon},
+    linestring::read_linestring_body,
+    multiline::read_multiline_body,
+    multipoint::read_multi_point_body,
+    multipolygon::read_multi_polygon_body,
     points::{read_point_coordinates, write_point},
 };
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::sql_types::*;
-
-impl<T> GeometryCollection<T>
+impl<P> GeometryCollection<P>
 where
-    T: PointT + Clone,
+    P: PointT + Clone,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self {
@@ -33,14 +32,14 @@ where
         }
     }
 
-    pub fn add_geometry(&mut self, geometry: GeometryContainer<T>) -> &mut Self {
+    pub fn add_geometry(&mut self, geometry: GeometryContainer<P>) -> &mut Self {
         self.geometries.push(geometry);
         self
     }
 
     pub fn add_geometries(
         &mut self,
-        geometries: impl IntoIterator<Item = GeometryContainer<T>>,
+        geometries: impl IntoIterator<Item = GeometryContainer<P>>,
     ) -> &mut Self {
         for gc in geometries {
             self.geometries.push(gc);
@@ -57,9 +56,9 @@ where
     }
 }
 
-impl<T> EwkbSerializable for GeometryCollection<T>
+impl<P> EwkbSerializable for GeometryCollection<P>
 where
-    T: PointT + Clone,
+    P: PointT + Clone,
 {
     fn geometry_type(&self) -> u32 {
         let mut g_type = GeometryType::GeometryCollection as u32;
@@ -71,80 +70,45 @@ where
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for GeometryCollection<T>
+impl<P> ReadFromSql for GeometryCollection<P>
 where
-    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
+    P: PointT + Debug + Clone,
 {
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_geometry_collection(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for GeometryCollection<T>
-where
-    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_geometry_collection(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for GeometryCollection<T>
-where
-    T: PointT + Debug + Clone,
-{
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes.as_bytes());
+    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
+        let mut r = Cursor::new(bytes);
         let end = r.read_u8()?;
         if end == BIG_ENDIAN {
-            read_geometry_collection::<BigEndian, T>(&mut r)
+            read_geometry_collection::<BigEndian, P>(&mut r)
         } else {
-            read_geometry_collection::<LittleEndian, T>(&mut r)
+            read_geometry_collection::<LittleEndian, P>(&mut r)
         }
     }
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for GeometryCollection<T>
+impl<P> WriteToSql for GeometryCollection<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT + Clone + EwkbSerializable,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
+    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    where
+        W: std::io::Write,
+    {
+        write_ewkb_header(self, self.srid, out)?;
+        out.write_u32::<LittleEndian>(self.geometries.len() as u32)?;
+        for g_container in self.geometries.iter() {
+            match g_container {
+                GeometryContainer::Point(g) => write_point(g, None, out)?,
+                GeometryContainer::LineString(g) => g.write_to_sql(out)?,
+                GeometryContainer::Polygon(g) => g.write_to_sql(out)?,
+                GeometryContainer::MultiPoint(g) => g.write_to_sql(out)?,
+                GeometryContainer::MultiLineString(g) => g.write_to_sql(out)?,
+                GeometryContainer::MultiPolygon(g) => g.write_to_sql(out)?,
+                GeometryContainer::GeometryCollection(g) => g.write_to_sql(out)?,
+            };
+        }
+        Ok(diesel::serialize::IsNull::No)
     }
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_geometry_collection<T>(
-    geometrycollection: &GeometryCollection<T>,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable + Clone,
-{
-    write_ewkb_header(geometrycollection, srid, out)?;
-    out.write_u32::<LittleEndian>(geometrycollection.geometries.len() as u32)?;
-    for g_container in geometrycollection.geometries.iter() {
-        match g_container {
-            GeometryContainer::Point(g) => write_point(g, None, out)?,
-            GeometryContainer::LineString(g) => write_linestring(g, None, out)?,
-            GeometryContainer::Polygon(g) => write_polygon(g, None, out)?,
-            GeometryContainer::MultiPoint(g) => write_multi_point(g, None, out)?,
-            GeometryContainer::MultiLineString(g) => write_multiline(g, None, out)?,
-            GeometryContainer::MultiPolygon(g) => write_multi_polygon(g, None, out)?,
-            GeometryContainer::GeometryCollection(g) => write_geometry_collection(g, None, out)?,
-        };
-    }
-    Ok(diesel::serialize::IsNull::No)
 }
 
 #[cfg(feature = "diesel")]

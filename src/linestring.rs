@@ -8,24 +8,24 @@ use crate::ewkb::{read_ewkb_header, write_ewkb_header};
 use crate::points::Dimension;
 #[cfg(feature = "diesel")]
 use crate::points::{read_point_coordinates, write_point_coordinates};
-use crate::sql_types::*;
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     types::{LineString, PointT},
 };
 
-impl<T> EwkbSerializable for LineString<T>
+impl<P> EwkbSerializable for LineString<P>
 where
-    T: PointT,
+    P: PointT,
 {
     fn geometry_type(&self) -> u32 {
         GeometryType::LineString as u32 | self.dimension()
     }
 }
 
-impl<T> LineString<T>
+impl<P> LineString<P>
 where
-    T: PointT,
+    P: PointT,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self::with_capacity(srid, 0)
@@ -38,12 +38,12 @@ where
         }
     }
 
-    pub fn add_point(&mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: P) -> &mut Self {
         self.points.push(point);
         self
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> &mut Self {
         for point in points {
             self.points.push(point);
         }
@@ -60,73 +60,38 @@ where
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for LineString<T>
+impl<P> ReadFromSql for LineString<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT + Debug + Clone,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes.as_bytes());
+    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
+        let mut r = Cursor::new(bytes);
         let end = r.read_u8()?;
         if end == BIG_ENDIAN {
-            read_linestring::<BigEndian, T>(&mut r)
+            read_linestring::<BigEndian, P>(&mut r)
         } else {
-            read_linestring::<LittleEndian, T>(&mut r)
+            read_linestring::<LittleEndian, P>(&mut r)
         }
     }
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for LineString<T>
+impl<P> WriteToSql for LineString<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT + EwkbSerializable,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
+    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    where
+        W: std::io::Write,
+    {
+        write_ewkb_header(self, self.srid, out)?;
+        // size and points
+        out.write_u32::<LittleEndian>(self.points.len() as u32)?;
+        for point in self.points.iter() {
+            write_point_coordinates(point, out)?;
+        }
+        Ok(diesel::serialize::IsNull::No)
     }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for LineString<T>
-where
-    T: PointT + Debug + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_linestring(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for LineString<T>
-where
-    T: PointT + Debug + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_linestring(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_linestring<T>(
-    linestring: &LineString<T>,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable,
-{
-    write_ewkb_header(linestring, srid, out)?;
-    // size and points
-    out.write_u32::<LittleEndian>(linestring.points.len() as u32)?;
-    for point in linestring.points.iter() {
-        write_point_coordinates(point, out)?;
-    }
-    Ok(diesel::serialize::IsNull::No)
 }
 
 #[cfg(feature = "diesel")]

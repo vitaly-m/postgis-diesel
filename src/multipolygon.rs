@@ -4,20 +4,19 @@ use std::io::Cursor;
 #[cfg(feature = "diesel")]
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header},
-    polygon::{read_polygon_body, write_polygon},
+    polygon::read_polygon_body,
 };
 use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     points::Dimension,
     types::*,
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use crate::sql_types::*;
-
-impl<T> MultiPolygon<T>
+impl<P> MultiPolygon<P>
 where
-    T: PointT + Clone,
+    P: PointT + Clone,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self::with_capacity(srid, 0)
@@ -42,7 +41,7 @@ where
         self
     }
 
-    pub fn add_point(&mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: P) -> &mut Self {
         if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
@@ -50,7 +49,7 @@ where
         self
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> &mut Self {
         if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
@@ -70,9 +69,9 @@ where
     }
 }
 
-impl<T> EwkbSerializable for MultiPolygon<T>
+impl<P> EwkbSerializable for MultiPolygon<P>
 where
-    T: PointT + Clone,
+    P: PointT + Clone,
 {
     fn geometry_type(&self) -> u32 {
         let mut g_type = GeometryType::MultiPolygon as u32;
@@ -84,73 +83,38 @@ where
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for MultiPolygon<T>
+impl<P> ReadFromSql for MultiPolygon<P>
 where
-    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
+    P: PointT + Debug + Clone,
 {
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_multi_polygon(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for MultiPolygon<T>
-where
-    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_multi_polygon(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for MultiPolygon<T>
-where
-    T: PointT + Debug + Clone,
-{
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes.as_bytes());
+    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
+        let mut r = Cursor::new(bytes);
         let end = r.read_u8()?;
         if end == BIG_ENDIAN {
-            read_multi_polygon::<BigEndian, T>(&mut r)
+            read_multi_polygon::<BigEndian, P>(&mut r)
         } else {
-            read_multi_polygon::<LittleEndian, T>(&mut r)
+            read_multi_polygon::<LittleEndian, P>(&mut r)
         }
     }
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for MultiPolygon<T>
+impl<P> WriteToSql for MultiPolygon<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT + Clone + EwkbSerializable,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
+    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    where
+        W: std::io::Write,
+    {
+        write_ewkb_header(self, self.srid, out)?;
+        // number of polygons
+        out.write_u32::<LittleEndian>(self.polygons.len() as u32)?;
+        for polygon in self.polygons.iter() {
+            polygon.write_to_sql(out)?;
+        }
+        Ok(diesel::serialize::IsNull::No)
     }
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_multi_polygon<T>(
-    multipolygon: &MultiPolygon<T>,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable + Clone,
-{
-    write_ewkb_header(multipolygon, srid, out)?;
-    // number of polygons
-    out.write_u32::<LittleEndian>(multipolygon.polygons.len() as u32)?;
-    for polygon in multipolygon.polygons.iter() {
-        write_polygon(polygon, None, out)?;
-    }
-    Ok(diesel::serialize::IsNull::No)
 }
 
 #[cfg(feature = "diesel")]

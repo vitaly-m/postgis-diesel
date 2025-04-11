@@ -6,20 +6,18 @@ use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 #[cfg(feature = "diesel")]
 use crate::{
     ewkb::{read_ewkb_header, write_ewkb_header},
-    linestring::write_linestring,
     points::read_point_coordinates,
 };
 use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     points::Dimension,
     types::{LineString, MultiLineString, PointT},
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 
-use crate::sql_types::*;
-
-impl<T> MultiLineString<T>
+impl<P> MultiLineString<P>
 where
-    T: PointT + Clone,
+    P: PointT + Clone,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self::with_capacity(srid, 0)
@@ -41,7 +39,7 @@ where
         self
     }
 
-    pub fn add_point(&mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: P) -> &mut Self {
         if self.lines.last().is_none() {
             self.add_line();
         }
@@ -49,7 +47,7 @@ where
         self
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> &mut Self {
         if self.lines.last().is_none() {
             self.add_line();
         }
@@ -69,9 +67,9 @@ where
     }
 }
 
-impl<T> EwkbSerializable for MultiLineString<T>
+impl<P> EwkbSerializable for MultiLineString<P>
 where
-    T: PointT,
+    P: PointT,
 {
     fn geometry_type(&self) -> u32 {
         let mut g_type = GeometryType::MultiLineString as u32;
@@ -83,73 +81,38 @@ where
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for MultiLineString<T>
+impl<P> WriteToSql for MultiLineString<P>
 where
-    T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
+    P: PointT + EwkbSerializable,
 {
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_multiline(self, self.srid, out)
+    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    where
+        W: std::io::Write,
+    {
+        write_ewkb_header(self, self.srid, out)?;
+        // number of lines
+        out.write_u32::<LittleEndian>(self.lines.len() as u32)?;
+        for line in self.lines.iter() {
+            line.write_to_sql(out)?;
+        }
+        Ok(diesel::serialize::IsNull::No)
     }
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for MultiLineString<T>
+impl<P> ReadFromSql for MultiLineString<P>
 where
-    T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
+    P: PointT + Debug + Clone,
 {
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_multiline(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for MultiLineString<T>
-where
-    T: PointT + Debug + Clone,
-{
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes.as_bytes());
+    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
+        let mut r = Cursor::new(bytes);
         let end = r.read_u8()?;
         if end == BIG_ENDIAN {
-            read_multiline::<BigEndian, T>(&mut r)
+            read_multiline::<BigEndian, P>(&mut r)
         } else {
-            read_multiline::<LittleEndian, T>(&mut r)
+            read_multiline::<LittleEndian, P>(&mut r)
         }
     }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for MultiLineString<T>
-where
-    T: PointT + Debug + Clone,
-{
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
-    }
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_multiline<T>(
-    multiline: &MultiLineString<T>,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable + Clone,
-{
-    write_ewkb_header(multiline, srid, out)?;
-    // number of lines
-    out.write_u32::<LittleEndian>(multiline.lines.len() as u32)?;
-    for line in multiline.lines.iter() {
-        write_linestring(line, None, out)?;
-    }
-    Ok(diesel::serialize::IsNull::No)
 }
 
 #[cfg(feature = "diesel")]

@@ -7,16 +7,16 @@ use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     points::Dimension,
     types::*,
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 
 #[cfg(feature = "diesel")]
 use crate::points::{read_point_coordinates, write_point};
-use crate::sql_types::*;
 
-impl<T> MultiPoint<T>
+impl<P> MultiPoint<P>
 where
-    T: PointT,
+    P: PointT,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self::with_capacity(srid, 0)
@@ -29,12 +29,12 @@ where
         }
     }
 
-    pub fn add_point(&mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: P) -> &mut Self {
         self.points.push(point);
         self
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> &mut Self {
         for point in points {
             self.points.push(point);
         }
@@ -50,9 +50,9 @@ where
     }
 }
 
-impl<T> EwkbSerializable for MultiPoint<T>
+impl<P> EwkbSerializable for MultiPoint<P>
 where
-    T: PointT,
+    P: PointT,
 {
     fn geometry_type(&self) -> u32 {
         let mut g_type = GeometryType::MultiPoint as u32;
@@ -64,73 +64,38 @@ where
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for MultiPoint<T>
+impl<P> ReadFromSql for MultiPoint<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT + Debug + Clone,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes.as_bytes());
+    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
+        let mut r = Cursor::new(bytes);
         let end = r.read_u8()?;
         if end == BIG_ENDIAN {
-            read_multipoint::<BigEndian, T>(&mut r)
+            read_multipoint::<BigEndian, P>(&mut r)
         } else {
-            read_multipoint::<LittleEndian, T>(&mut r)
+            read_multipoint::<LittleEndian, P>(&mut r)
         }
     }
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for MultiPoint<T>
+impl<P> WriteToSql for MultiPoint<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT + EwkbSerializable,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
+    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    where
+        W: std::io::Write,
+    {
+        write_ewkb_header(self, self.srid, out)?;
+        // size and points
+        out.write_u32::<LittleEndian>(self.points.len() as u32)?;
+        for point in self.points.iter() {
+            write_point(point, None, out)?;
+        }
+        Ok(diesel::serialize::IsNull::No)
     }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for MultiPoint<T>
-where
-    T: PointT + Debug + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_multi_point(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for MultiPoint<T>
-where
-    T: PointT + Debug + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_multi_point(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_multi_point<T>(
-    multipoint: &MultiPoint<T>,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable,
-{
-    write_ewkb_header(multipoint, srid, out)?;
-    // size and points
-    out.write_u32::<LittleEndian>(multipoint.points.len() as u32)?;
-    for point in multipoint.points.iter() {
-        write_point(point, None, out)?;
-    }
-    Ok(diesel::serialize::IsNull::No)
 }
 
 #[cfg(feature = "diesel")]

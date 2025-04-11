@@ -42,13 +42,14 @@ pub trait EwkbSerializable {
 }
 
 #[cfg(feature = "diesel")]
-pub fn write_ewkb_header<T>(
+pub fn write_ewkb_header<W, T>(
     geometry: &T,
     srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+    out: &mut W
 ) -> diesel::serialize::Result
 where
     T: EwkbSerializable,
+    W: WriteBytesExt
 {
     out.write_u8(LITTLE_ENDIAN)?;
     let mut p_type = geometry.geometry_type();

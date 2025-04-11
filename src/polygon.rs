@@ -8,16 +8,16 @@ use crate::ewkb::{read_ewkb_header, write_ewkb_header};
 use crate::{
     ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
     types::{PointT, Polygon},
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
 
 use crate::points::Dimension;
 #[cfg(feature = "diesel")]
 use crate::points::{read_point_coordinates, write_point_coordinates};
-use crate::sql_types::*;
 
-impl<T> Polygon<T>
+impl<P> Polygon<P>
 where
-    T: PointT + Clone,
+    P: PointT + Clone,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self::with_capacity(srid, 0)
@@ -39,7 +39,7 @@ where
         self
     }
 
-    pub fn add_point(&mut self, point: T) -> &mut Self {
+    pub fn add_point(&mut self, point: P) -> &mut Self {
         if self.rings.last().is_none() {
             self.add_ring();
         }
@@ -47,7 +47,7 @@ where
         self
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> &mut Self {
         if self.rings.last().is_none() {
             self.add_ring();
         }
@@ -69,9 +69,9 @@ where
     }
 }
 
-impl<T> EwkbSerializable for Polygon<T>
+impl<P> EwkbSerializable for Polygon<P>
 where
-    T: PointT + Clone,
+    P: PointT + Clone,
 {
     fn geometry_type(&self) -> u32 {
         GeometryType::Polygon as u32 | self.dimension()
@@ -79,76 +79,41 @@ where
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for Polygon<T>
+impl<P> WriteToSql for Polygon<P>
 where
-    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
+    P: PointT + Clone + EwkbSerializable,
 {
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_polygon(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for Polygon<T>
-where
-    T: PointT + Debug + PartialEq + Clone + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_polygon(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_polygon<T>(
-    polygon: &Polygon<T>,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable + Clone,
-{
-    write_ewkb_header(polygon, srid, out)?;
-    // number of rings
-    out.write_u32::<LittleEndian>(polygon.rings.len() as u32)?;
-    for ring in polygon.rings.iter() {
-        //number of points in ring
-        out.write_u32::<LittleEndian>(ring.len() as u32)?;
-        for point in ring.iter() {
-            write_point_coordinates(point, out)?;
+    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    where
+        W: std::io::Write,
+    {
+        write_ewkb_header(self, self.srid, out)?;
+        // number of rings
+        out.write_u32::<LittleEndian>(self.rings.len() as u32)?;
+        for ring in self.rings.iter() {
+            //number of points in ring
+            out.write_u32::<LittleEndian>(ring.len() as u32)?;
+            for point in ring.iter() {
+                write_point_coordinates(point, out)?;
+            }
         }
+        Ok(diesel::serialize::IsNull::No)
     }
-    Ok(diesel::serialize::IsNull::No)
 }
 
 #[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for Polygon<T>
+impl<P> ReadFromSql for Polygon<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT + Debug + Clone,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes.as_bytes());
+    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
+        let mut r = Cursor::new(bytes);
         let end = r.read_u8()?;
         if end == BIG_ENDIAN {
-            read_polygon::<BigEndian, T>(&mut r)
+            read_polygon::<BigEndian, P>(&mut r)
         } else {
-            read_polygon::<LittleEndian, T>(&mut r)
+            read_polygon::<LittleEndian, P>(&mut r)
         }
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for Polygon<T>
-where
-    T: PointT + Debug + Clone,
-{
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
     }
 }
 

@@ -261,28 +261,55 @@ impl PointT for PointZM {
     }
 }
 
+#[cfg(feature = "diesel")]
+/// Deserialize a point from SQL raw bytes.
+fn from_sql<P>(bytes: &[u8]) -> diesel::deserialize::Result<P>
+where
+    P: PointT,
+{
+    let mut r = Cursor::new(bytes);
+    let end = r.read_u8()?;
+    if end == BIG_ENDIAN {
+        read_point::<BigEndian, P>(&mut r)
+    } else {
+        read_point::<LittleEndian, P>(&mut r)
+    }
+}
+
 macro_rules! impl_point_from_to_sql {
     ($g:ident, $p:ident) => {
-        #[cfg(feature = "diesel")]
+        #[cfg(feature = "postgres")]
         impl diesel::deserialize::FromSql<$g, diesel::pg::Pg> for $p {
             fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-                let mut r = Cursor::new(bytes.as_bytes());
-                let end = r.read_u8()?;
-                if end == BIG_ENDIAN {
-                    read_point::<BigEndian, $p>(&mut r)
-                } else {
-                    read_point::<LittleEndian, $p>(&mut r)
-                }
+                from_sql(bytes.as_bytes())
             }
         }
 
-        #[cfg(feature = "diesel")]
-        impl diesel::serialize::ToSql<$g, diesel::pg::Pg> for $p {
-            fn to_sql(
-                &self,
-                out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-            ) -> diesel::serialize::Result {
+        #[cfg(feature = "sqlite")]
+        impl diesel::deserialize::FromSql<$g, diesel::sqlite::Sqlite> for $p {
+            fn from_sql(
+                mut bytes: diesel::sqlite::SqliteValue<'_, '_, '_>,
+            ) -> diesel::deserialize::Result<Self> {
+                from_sql(bytes.read_blob())
+            }
+        }
+
+        #[cfg(feature = "postgres")]
+        impl diesel::serialize::ToSql<$g, diesel::pg::Pg> for $p
+        {
+            fn to_sql(&self, out: &mut diesel::serialize::Output<diesel::pg::Pg>) -> diesel::serialize::Result {
                 write_point(self, self.get_srid(), out)?;
+                Ok(diesel::serialize::IsNull::No)
+            }
+        }
+
+        #[cfg(feature = "sqlite")]
+        impl diesel::serialize::ToSql<$g, diesel::sqlite::Sqlite> for $p
+        {
+            fn to_sql(&self, out: &mut diesel::serialize::Output<diesel::sqlite::Sqlite>) -> diesel::serialize::Result {
+                let mut bytes = Vec::new();
+                write_point(self, self.get_srid(), &mut bytes)?;
+                out.set_value(bytes);
                 Ok(diesel::serialize::IsNull::No)
             }
         }
@@ -300,13 +327,14 @@ impl_point_from_to_sql!(Geography, PointM);
 impl_point_from_to_sql!(Geography, PointZM);
 
 #[cfg(feature = "diesel")]
-pub fn write_point<T>(
-    point: &T,
+pub fn write_point<W, P>(
+    point: &P,
     srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+    out: &mut W,
 ) -> diesel::serialize::Result
 where
-    T: PointT + EwkbSerializable,
+    P: PointT + EwkbSerializable,
+    W: WriteBytesExt
 {
     write_ewkb_header(point, srid, out)?;
     write_point_coordinates(point, out)?;
@@ -314,12 +342,13 @@ where
 }
 
 #[cfg(feature = "diesel")]
-pub fn write_point_coordinates<T>(
-    point: &T,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
+pub fn write_point_coordinates<W, P>(
+    point: &P,
+    out: &mut W,
 ) -> diesel::serialize::Result
 where
-    T: PointT,
+    P: PointT,
+    W: std::io::Write,
 {
     out.write_f64::<LittleEndian>(point.get_x())?;
     out.write_f64::<LittleEndian>(point.get_y())?;

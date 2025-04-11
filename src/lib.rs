@@ -21,6 +21,9 @@ mod geometrycontainer;
 mod linestring;
 mod multiline;
 mod multipoint;
+mod to_and_from_sql_geography;
+mod to_and_from_sql_geometry;
+mod write_to_read_from_sql;
 mod multipolygon;
 #[cfg(feature = "diesel")]
 pub mod operators;

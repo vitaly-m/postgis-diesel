@@ -33,11 +33,11 @@ impl std::error::Error for PointConstructorError {}
 /// #[derive(Queryable)]
 /// struct QueryablePointExample {
 ///     id: i32,
-///     point: Point,
+///     poinP: Point,
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -56,11 +56,11 @@ pub struct Point {
 /// #[derive(Queryable)]
 /// struct QueryablePointZExample {
 ///     id: i32,
-///     point: PointZ,
+///     poinP: PointZ,
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -80,11 +80,11 @@ pub struct PointZ {
 /// #[derive(Queryable)]
 /// struct QueryablePointMExample {
 ///     id: i32,
-///     point: PointM,
+///     poinP: PointM,
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -104,11 +104,11 @@ pub struct PointM {
 /// #[derive(Queryable)]
 /// struct QueryablePointZMExample {
 ///     id: i32,
-///     point: PointZM,
+///     poinP: PointZM,
 /// }
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -152,7 +152,7 @@ pub trait PointT {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -174,7 +174,7 @@ pub struct MultiPoint<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -196,7 +196,7 @@ pub struct LineString<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -218,7 +218,7 @@ pub struct MultiLineString<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -240,7 +240,7 @@ pub struct Polygon<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -255,7 +255,7 @@ pub struct MultiPolygon<T> {
 ///
 /// T is the Point type (Point or PointZ or PointM)
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -291,7 +291,7 @@ pub enum GeometryContainer<T> {
 /// }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "diesel", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "diesel", derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -347,7 +347,7 @@ mod tests {
         {
             let schema = schema_for!(Point);
             let schema_json = serde_json::to_string(&schema).unwrap();
-            let expected_schema = r#"{"$schema":"http://json-schema.org/draft-07/schema#","title":"Point","description":"Use that structure in `Insertable` or `Queryable` struct if you work with Point geometry. ``` #[macro_use] extern crate diesel; use postgis_diesel::types::Point; #[derive(Queryable)] struct QueryablePointExample { id: i32, point: Point, } ```","type":"object","required":["x","y"],"properties":{"srid":{"type":["integer","null"],"format":"uint32","minimum":0.0},"x":{"type":"number","format":"double"},"y":{"type":"number","format":"double"}}}"#;
+            let expected_schema = r#"{"$schema":"http://json-schema.org/draft-07/schema#","title":"Point","description":"Use that structure in `Insertable` or `Queryable` struct if you work with Point geometry. ``` #[macro_use] extern crate diesel; use postgis_diesel::types::Point; #[derive(Queryable)] struct QueryablePointExample { id: i32, poinP: Point, } ```","type":"object","required":["x","y"],"properties":{"srid":{"type":["integer","null"],"format":"uint32","minimum":0.0},"x":{"type":"number","format":"double"},"y":{"type":"number","format":"double"}}}"#;
             assert_eq!(expected_schema, schema_json);
 
             let schema_for_value = schema_for_value!(point);
