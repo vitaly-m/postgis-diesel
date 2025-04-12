@@ -1,14 +1,14 @@
 name: Check Codebase
 
 on:
-  workflow_run:
-    workflows: ["Check Code Formatting"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+  pull_request:
+
 
 jobs:
   check:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
 
     steps:
