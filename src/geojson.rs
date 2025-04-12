@@ -599,9 +599,15 @@ mod tests {
             points: vec![],
             srid: WGS84_SRID,
         };
-        line_string.add_point(Point::new(1.0, 2.0, WGS84_SRID)).unwrap();
-        line_string.add_point(Point::new(3.0, 4.0, WGS84_SRID)).unwrap();
-        line_string.add_point(Point::new(5.0, 6.0, WGS84_SRID)).unwrap();
+        line_string
+            .add_point(Point::new(1.0, 2.0, WGS84_SRID))
+            .unwrap();
+        line_string
+            .add_point(Point::new(3.0, 4.0, WGS84_SRID))
+            .unwrap();
+        line_string
+            .add_point(Point::new(5.0, 6.0, WGS84_SRID))
+            .unwrap();
 
         let expected_json =
             "{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[3.0,4.0],[5.0,6.0]]}";
