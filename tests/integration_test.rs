@@ -2,12 +2,12 @@
 #[macro_use]
 extern crate diesel;
 
-use std::env;
-use std::sync::Once;
 use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use dotenvy::dotenv;
+use std::env;
+use std::sync::Once;
 
 use postgis_diesel::operators::*;
 use postgis_diesel::types::*;
