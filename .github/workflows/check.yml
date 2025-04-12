@@ -26,5 +26,5 @@ jobs:
 
       - name: Run checks with features
         run: |
-          cargo check --features postgres sqlite diesel serde
-          cargo clippy --features postgres sqlite diesel serde -- -D warnings
+          cargo check --features "postgres sqlite diesel serde"
+          cargo clippy --features "postgres sqlite diesel serde" -- -D warnings

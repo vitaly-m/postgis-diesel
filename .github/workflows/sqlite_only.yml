@@ -20,8 +20,8 @@ jobs:
     - name: Run tests
       run: cargo test --no-default-features --features sqlite --verbose
     - name: Rust test enabling serde
-      run: cargo test --no-default-features --features sqlite serde --verbose
+      run: cargo test --no-default-features --features "sqlite serde" --verbose
     - name: Rust test enabling serde_geojson
-      run: cargo test --no-default-features --features sqlite serde_geojson --verbose
+      run: cargo test --no-default-features --features "sqlite serde_geojson" --verbose
     - name: Rust test enabling schemars
-      run: cargo test --no-default-features --features sqlite schemars --verbose
+      run: cargo test --no-default-features --features "sqlite schemars" --verbose
