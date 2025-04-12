@@ -143,7 +143,7 @@ pub struct PointZM {
 }
 
 /// Allows uniform access across the four point types
-pub trait PointT: ReadFromSql + WriteToSql+ Copy + core::fmt::Debug {
+pub trait PointT: ReadFromSql + WriteToSql + Copy + core::fmt::Debug {
     fn new_point(
         x: f64,
         y: f64,

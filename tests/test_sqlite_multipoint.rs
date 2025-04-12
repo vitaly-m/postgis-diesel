@@ -48,7 +48,8 @@ fn establish_sqlite_connection() -> SqliteConnection {
     // We delete the database file if it exists
     let _ = std::fs::remove_file("test_multipoint.sqlite");
 
-    let mut conn = SqliteConnection::establish("test_multipoint.sqlite").expect("Error connecting to sqlite");
+    let mut conn =
+        SqliteConnection::establish("test_multipoint.sqlite").expect("Error connecting to sqlite");
     INIT.call_once(|| {
         let _ = diesel::sql_query("DROP TABLE geom_accessor_functions").execute(&mut conn);
 
@@ -66,14 +67,14 @@ fn establish_sqlite_connection() -> SqliteConnection {
             multipoint: MultiPoint {
                 points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
                 srid: Some(4326),
-            }
+            },
         };
         let east_sample = NewGeometrySample {
             name: "eastern".to_string(),
             multipoint: MultiPoint {
                 points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
                 srid: Some(4326),
-            }
+            },
         };
         let samples = vec![north_sample, east_sample];
         diesel::insert_into(geom_accessor_functions::table)

@@ -32,15 +32,15 @@ where
     }
 
     /// Adds a point to the last line of the multiline.
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `point` - The point to add.
-    /// 
+    ///
     /// # Errors
-    /// 
+    ///
     /// * `IncompatibleSpatialReferenceSystemIdentifier` - If the point's SRID does not match the multiline's SRID.
-    /// 
+    ///
     pub fn add_point(&mut self, point: P) -> Result<&mut Self, crate::errors::Error> {
         if self.lines.last().is_none() {
             self.add_line();
@@ -59,7 +59,10 @@ where
     ///
     /// * `IncompatibleSpatialReferenceSystemIdentifier` - If the point's SRID does not match the multiline's SRID.
     ///
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> Result<&mut Self, crate::errors::Error> {
+    pub fn add_points(
+        &mut self,
+        points: impl IntoIterator<Item = P>,
+    ) -> Result<&mut Self, crate::errors::Error> {
         if self.lines.last().is_none() {
             self.add_line();
         }

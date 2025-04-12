@@ -19,7 +19,7 @@ impl std::fmt::Display for Error {
                 write!(
                     f,
                     "Incompatible SRID: expected {:?}, actual {:?}",
-					expected, actual
+                    expected, actual
                 )
             }
         }

@@ -51,7 +51,8 @@ fn new_line(points: Vec<(f64, f64)>) -> LineString<Point> {
     }
     //just to check that add_points works
     LineString::new(Option::Some(4326))
-        .add_points(l_points).unwrap()
+        .add_points(l_points)
+        .unwrap()
         .to_owned()
 }
 
@@ -59,7 +60,8 @@ fn establish_sqlite_connection() -> SqliteConnection {
     // We delete the database file if it exists
     let _ = std::fs::remove_file("test_linestring.sqlite");
 
-    let mut conn = SqliteConnection::establish("test_linestring.sqlite").expect("Error connecting to sqlite");
+    let mut conn =
+        SqliteConnection::establish("test_linestring.sqlite").expect("Error connecting to sqlite");
     INIT.call_once(|| {
         let _ = diesel::sql_query("DROP TABLE geom_accessor_functions").execute(&mut conn);
 
@@ -74,18 +76,11 @@ fn establish_sqlite_connection() -> SqliteConnection {
         .execute(&mut conn);
         let north_sample = NewGeometrySample {
             name: "northern".to_string(),
-            point: new_line(vec![
-				(72.0, 64.0),
-				(73.0, 64.0),
-				(23.0, 104.0),
-			]),
+            point: new_line(vec![(72.0, 64.0), (73.0, 64.0), (23.0, 104.0)]),
         };
         let east_sample = NewGeometrySample {
             name: "eastern".to_string(),
-            point: new_line(vec![
-				(72.0, 64.0),
-				(73.0, 64.0),
-			]),
+            point: new_line(vec![(72.0, 64.0), (73.0, 64.0)]),
         };
         let samples = vec![north_sample, east_sample];
         diesel::insert_into(geom_accessor_functions::table)

@@ -70,14 +70,16 @@ fn establish_sqlite_connection() -> SqliteConnection {
                 new_point(73.0, 65.0),
                 new_point(71.0, 62.0),
                 new_point(72.0, 64.0),
-            ]).unwrap()
+            ])
+            .unwrap()
             .add_empty_polygon()
             .add_points([
                 new_point(75.0, 64.0),
                 new_point(74.0, 65.0),
                 new_point(74.0, 62.0),
                 new_point(75.0, 64.0),
-            ]).unwrap();
+            ])
+            .unwrap();
         let north_sample = NewGeometrySample {
             name: "northern".to_string(),
             multipolygon: multipolygon1,
@@ -90,14 +92,16 @@ fn establish_sqlite_connection() -> SqliteConnection {
                 new_point(73.0, 65.0),
                 new_point(71.0, 62.0),
                 new_point(72.0, 64.0),
-            ]).unwrap()
+            ])
+            .unwrap()
             .add_empty_polygon()
             .add_points([
                 new_point(75.0, 64.0),
                 new_point(74.0, 65.0),
                 new_point(74.0, 62.0),
                 new_point(75.0, 64.0),
-            ]).unwrap();
+            ])
+            .unwrap();
         let east_sample = NewGeometrySample {
             name: "eastern".to_string(),
             multipolygon: multipolygon2,

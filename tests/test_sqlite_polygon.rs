@@ -63,23 +63,27 @@ fn establish_sqlite_connection() -> SqliteConnection {
         )
         .execute(&mut conn);
         let mut polygon1 = Polygon::new(Some(4326));
-        polygon1.add_points([
-            new_point(72.0, 64.0),
-            new_point(73.0, 65.0),
-            new_point(71.0, 62.0),
-            new_point(72.0, 64.0),
-        ]).unwrap();
+        polygon1
+            .add_points([
+                new_point(72.0, 64.0),
+                new_point(73.0, 65.0),
+                new_point(71.0, 62.0),
+                new_point(72.0, 64.0),
+            ])
+            .unwrap();
         let north_sample = NewGeometrySample {
             name: "northern".to_string(),
             polygon: polygon1,
         };
-		let mut polygon2 = Polygon::new(Some(4326));
-        polygon2.add_points([
-            new_point(72.0, 64.0),
-            new_point(73.0, 65.0),
-            new_point(71.0, 62.0),
-            new_point(72.0, 64.0),
-        ]).unwrap();
+        let mut polygon2 = Polygon::new(Some(4326));
+        polygon2
+            .add_points([
+                new_point(72.0, 64.0),
+                new_point(73.0, 65.0),
+                new_point(71.0, 62.0),
+                new_point(72.0, 64.0),
+            ])
+            .unwrap();
         let east_sample = NewGeometrySample {
             name: "eastern".to_string(),
             polygon: polygon2,

@@ -63,7 +63,10 @@ where
         Ok(self)
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> Result<&mut Self, crate::errors::Error> {
+    pub fn add_points(
+        &mut self,
+        points: impl IntoIterator<Item = P>,
+    ) -> Result<&mut Self, crate::errors::Error> {
         for point in points {
             self.add_point(point)?;
         }

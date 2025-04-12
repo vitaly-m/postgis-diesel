@@ -47,7 +47,8 @@ fn establish_sqlite_connection() -> SqliteConnection {
     // We delete the database file if it exists
     let _ = std::fs::remove_file("test_point.sqlite");
 
-    let mut conn = SqliteConnection::establish("test_point.sqlite").expect("Error connecting to sqlite");
+    let mut conn =
+        SqliteConnection::establish("test_point.sqlite").expect("Error connecting to sqlite");
     INIT.call_once(|| {
         let _ = diesel::sql_query("DROP TABLE geom_accessor_functions").execute(&mut conn);
 

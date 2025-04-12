@@ -362,9 +362,7 @@ impl<'de, T: GeoJsonGeometry<f64> + PointT> Deserialize<'de> for Polygon<T> {
     }
 }
 
-impl<T: GeoJsonGeometry<f64> + PointT> GeoJsonGeometry<Vec<Vec<Vec<f64>>>>
-    for MultiPolygon<T>
-{
+impl<T: GeoJsonGeometry<f64> + PointT> GeoJsonGeometry<Vec<Vec<Vec<f64>>>> for MultiPolygon<T> {
     fn to_geo_coordinates(&self) -> Vec<Vec<Vec<Vec<f64>>>> {
         self.polygons
             .iter()
@@ -516,9 +514,7 @@ impl<'de, T: GeoJsonGeometry<f64> + PointT + Deserialize<'de>> Deserialize<'de>
     }
 }
 
-impl<T: GeoJsonGeometry<f64> + PointT + Serialize, P: Serialize> Serialize
-    for Feature<T, P>
-{
+impl<T: GeoJsonGeometry<f64> + PointT + Serialize, P: Serialize> Serialize for Feature<T, P> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,

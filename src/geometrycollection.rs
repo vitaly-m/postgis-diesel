@@ -178,7 +178,8 @@ mod tests {
             Dimension::None as u32,
             GeometryContainer::LineString(
                 LineString::new(None)
-                    .add_point(Point::new(0.0, 0.0, None)).unwrap()
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -187,7 +188,8 @@ mod tests {
             Dimension::Z as u32,
             GeometryContainer::LineString(
                 LineString::new(None)
-                    .add_point(PointZ::new(0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -196,7 +198,8 @@ mod tests {
             Dimension::M as u32,
             GeometryContainer::LineString(
                 LineString::new(None)
-                    .add_point(PointM::new(0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -205,7 +208,8 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::LineString(
                 LineString::new(None)
-                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -218,7 +222,8 @@ mod tests {
             Dimension::None as u32,
             GeometryContainer::Polygon(
                 Polygon::new(None)
-                    .add_point(Point::new(0.0, 0.0, None)).unwrap()
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -227,7 +232,8 @@ mod tests {
             Dimension::Z as u32,
             GeometryContainer::Polygon(
                 Polygon::new(None)
-                    .add_point(PointZ::new(0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -236,7 +242,8 @@ mod tests {
             Dimension::M as u32,
             GeometryContainer::Polygon(
                 Polygon::new(None)
-                    .add_point(PointM::new(0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -245,7 +252,8 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::Polygon(
                 Polygon::new(None)
-                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -298,7 +306,8 @@ mod tests {
             Dimension::None as u32,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
-                    .add_point(Point::new(0.0, 0.0, None)).unwrap()
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -307,7 +316,8 @@ mod tests {
             Dimension::Z as u32,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
-                    .add_point(PointZ::new(0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -316,7 +326,8 @@ mod tests {
             Dimension::M as u32,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
-                    .add_point(PointM::new(0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -325,7 +336,8 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
-                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -338,7 +350,8 @@ mod tests {
             Dimension::None as u32,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
-                    .add_point(Point::new(0.0, 0.0, None)).unwrap()
+                    .add_point(Point::new(0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -347,7 +360,8 @@ mod tests {
             Dimension::Z as u32,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
-                    .add_point(PointZ::new(0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -356,7 +370,8 @@ mod tests {
             Dimension::M as u32,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
-                    .add_point(PointM::new(0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
@@ -365,7 +380,8 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
-                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).unwrap()
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .unwrap()
                     .to_owned()
             )
             .dimension()
