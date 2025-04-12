@@ -9,6 +9,7 @@ extern crate serde;
 #[macro_use]
 extern crate schemars;
 
+pub mod errors;
 mod ewkb;
 #[cfg(feature = "diesel")]
 pub mod functions;

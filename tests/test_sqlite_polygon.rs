@@ -68,7 +68,7 @@ fn establish_sqlite_connection() -> SqliteConnection {
             new_point(73.0, 65.0),
             new_point(71.0, 62.0),
             new_point(72.0, 64.0),
-        ]);
+        ]).unwrap();
         let north_sample = NewGeometrySample {
             name: "northern".to_string(),
             polygon: polygon1,
@@ -79,7 +79,7 @@ fn establish_sqlite_connection() -> SqliteConnection {
             new_point(73.0, 65.0),
             new_point(71.0, 62.0),
             new_point(72.0, 64.0),
-        ]);
+        ]).unwrap();
         let east_sample = NewGeometrySample {
             name: "eastern".to_string(),
             polygon: polygon2,

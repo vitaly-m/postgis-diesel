@@ -63,22 +63,22 @@ fn establish_sqlite_connection() -> SqliteConnection {
         )
         .execute(&mut conn);
         let mut multiline1 = MultiLineString::new(Some(4326));
-        multiline1.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+        multiline1.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]).unwrap();
         multiline1.add_line();
-        multiline1.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+        multiline1.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]).unwrap();
         let north_sample = NewGeometrySample {
             name: "northern".to_string(),
             multiline: multiline1,
         };
-        // let mut multiline2 = MultiLineString::new(Some(4326));
-        // multiline2.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
-        // multiline2.add_line();
-        // multiline2.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
-        // let east_sample = NewGeometrySample {
-        //     name: "eastern".to_string(),
-        //     multiline: multiline2,
-        // };
-        let samples = vec![north_sample];
+        let mut multiline2 = MultiLineString::new(Some(4326));
+        multiline2.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]).unwrap();
+        multiline2.add_line();
+        multiline2.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]).unwrap();
+        let east_sample = NewGeometrySample {
+            name: "eastern".to_string(),
+            multiline: multiline2,
+        };
+        let samples = vec![north_sample, east_sample];
         diesel::insert_into(geom_accessor_functions::table)
             .values(&samples)
             .execute(&mut conn)

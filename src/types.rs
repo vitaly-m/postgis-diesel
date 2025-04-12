@@ -2,6 +2,8 @@ use std::fmt;
 
 use crate::sql_types::Geography;
 use crate::sql_types::Geometry;
+use crate::write_to_read_from_sql::ReadFromSql;
+use crate::write_to_read_from_sql::WriteToSql;
 
 /// Error which may be returned if point constructed without required fields or has some unexpected fields for type.
 /// ```
@@ -16,6 +18,12 @@ use crate::sql_types::Geometry;
 #[derive(Debug, Clone, PartialEq)]
 pub struct PointConstructorError {
     pub reason: String,
+}
+
+impl From<PointConstructorError> for std::io::Error {
+    fn from(err: PointConstructorError) -> std::io::Error {
+        std::io::Error::new(std::io::ErrorKind::InvalidData, err)
+    }
 }
 
 impl fmt::Display for PointConstructorError {
@@ -135,7 +143,7 @@ pub struct PointZM {
 }
 
 /// Allows uniform access across the four point types
-pub trait PointT {
+pub trait PointT: ReadFromSql + WriteToSql+ Copy + core::fmt::Debug {
     fn new_point(
         x: f64,
         y: f64,
@@ -295,7 +303,7 @@ pub struct MultiPolygon<T> {
     serde(
         tag = "type",
         bound(
-            deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>"
+            deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + serde::Deserialize<'de>"
         )
     )
 )]
@@ -340,7 +348,7 @@ pub struct GeometryCollection<T> {
 #[serde(
     tag = "type",
     bound(
-        deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>, P: serde::Deserialize<'de>"
+        deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + serde::Deserialize<'de>, P: serde::Deserialize<'de>"
     )
 )]
 pub struct Feature<T, P: serde::Serialize> {
@@ -354,7 +362,7 @@ pub struct Feature<T, P: serde::Serialize> {
 #[serde(
     tag = "type",
     bound(
-        deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + Clone + serde::Deserialize<'de>, P: serde::Deserialize<'de>"
+        deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + serde::Deserialize<'de>, P: serde::Deserialize<'de>"
     )
 )]
 pub struct FeatureCollection<T, P: serde::Serialize> {

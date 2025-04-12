@@ -1,17 +1,9 @@
-use std::fmt::Debug;
-use std::io::Cursor;
-
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 use crate::points::Dimension;
-#[cfg(feature = "diesel")]
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 use crate::{
-    ewkb::{read_ewkb_header, write_ewkb_header},
-    points::{read_point_coordinates, write_point_coordinates},
-    write_to_read_from_sql::{ReadFromSql, WriteToSql},
-};
-use crate::{
-    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType},
     types::{LineString, PointT},
 };
 
@@ -19,8 +11,16 @@ impl<P> EwkbSerializable for LineString<P>
 where
     P: PointT,
 {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::LineString
+    }
+
     fn geometry_type(&self) -> u32 {
         GeometryType::LineString as u32 | self.dimension()
+    }
+
+    fn srid(&self) -> Option<u32> {
+        self.srid
     }
 }
 
@@ -39,16 +39,35 @@ where
         }
     }
 
-    pub fn add_point(&mut self, point: P) -> &mut Self {
+    /// Adds a point to the linestring.
+    ///
+    /// # Arguments
+    ///
+    /// * `point` - The point to add.
+    ///
+    /// # Errors
+    ///
+    /// * `IncompatibleSpatialReferenceSystemIdentifier` - If the point's SRID does not match the linestring's SRID.
+    ///
+    pub fn add_point(&mut self, point: P) -> Result<&mut Self, crate::errors::Error> {
+        if point.srid() != self.srid {
+            return Err(
+                crate::errors::Error::IncompatibleSpatialReferenceSystemIdentifier {
+                    expected: self.srid,
+                    actual: point.srid(),
+                },
+            );
+        }
+
         self.points.push(point);
-        self
+        Ok(self)
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> &mut Self {
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> Result<&mut Self, crate::errors::Error> {
         for point in points {
-            self.points.push(point);
+            self.add_point(point)?;
         }
-        self
+        Ok(self)
     }
 
     pub fn dimension(&self) -> u32 {
@@ -60,65 +79,41 @@ where
     }
 }
 
-#[cfg(feature = "diesel")]
 impl<P> ReadFromSql for LineString<P>
 where
-    P: PointT + Debug + Clone,
+    P: PointT,
 {
-    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes);
-        let end = r.read_u8()?;
-        if end == BIG_ENDIAN {
-            read_linestring::<BigEndian, P>(&mut r)
-        } else {
-            read_linestring::<LittleEndian, P>(&mut r)
+    fn read_body<Endianness, Reader>(
+        header: crate::ewkb::EwkbHeader,
+        reader: &mut Reader,
+    ) -> Result<Self, std::io::Error>
+    where
+        Reader: std::io::Read,
+        Endianness: byteorder::ByteOrder,
+    {
+        let len = reader.read_u32::<Endianness>()?;
+        let mut ls = LineString::with_capacity(header.srid, len as usize);
+        for _i in 0..len {
+            ls.add_point(P::read_body::<Endianness, Reader>(header, reader)?)
+                .unwrap();
         }
+        Ok(ls)
     }
 }
 
-#[cfg(feature = "diesel")]
 impl<P> WriteToSql for LineString<P>
 where
-    P: PointT + EwkbSerializable,
+    P: PointT,
 {
-    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    fn write_body<Writer>(&self, out: &mut Writer) -> Result<(), std::io::Error>
     where
-        W: std::io::Write,
+        Writer: std::io::Write,
     {
-        write_ewkb_header(self, self.srid, out)?;
         // size and points
         out.write_u32::<LittleEndian>(self.points.len() as u32)?;
         for point in self.points.iter() {
-            write_point_coordinates(point, out)?;
+            point.write_body::<Writer>(out)?;
         }
-        Ok(diesel::serialize::IsNull::No)
+        Ok(())
     }
-}
-
-#[cfg(feature = "diesel")]
-fn read_linestring<T, P>(cursor: &mut Cursor<&[u8]>) -> diesel::deserialize::Result<LineString<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::LineString)?;
-    read_linestring_body::<T, P>(g_header.g_type, g_header.srid, cursor)
-}
-
-#[cfg(feature = "diesel")]
-pub fn read_linestring_body<T, P>(
-    g_type: u32,
-    srid: Option<u32>,
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<LineString<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let len = cursor.read_u32::<T>()?;
-    let mut ls = LineString::with_capacity(srid, len as usize);
-    for _i in 0..len {
-        ls.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
-    }
-    Ok(ls)
 }

@@ -51,7 +51,7 @@ fn new_line(points: Vec<(f64, f64)>) -> LineString<Point> {
     }
     //just to check that add_points works
     LineString::new(Option::Some(4326))
-        .add_points(l_points)
+        .add_points(l_points).unwrap()
         .to_owned()
 }
 

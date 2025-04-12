@@ -1,18 +1,10 @@
-use std::fmt::Debug;
-use std::io::Cursor;
-
-#[cfg(feature = "diesel")]
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 use crate::{
-    ewkb::{read_ewkb_header, write_ewkb_header},
-    points::{read_point_coordinates, write_point},
-    write_to_read_from_sql::{ReadFromSql, WriteToSql},
-};
-use crate::{
-    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType},
     points::Dimension,
     types::*,
 };
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 impl<P> MultiPoint<P>
 where
@@ -54,6 +46,10 @@ impl<P> EwkbSerializable for MultiPoint<P>
 where
     P: PointT,
 {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::MultiPoint
+    }
+
     fn geometry_type(&self) -> u32 {
         let mut g_type = GeometryType::MultiPoint as u32;
         if let Some(point) = self.points.first() {
@@ -61,70 +57,48 @@ where
         }
         g_type
     }
+
+    fn srid(&self) -> Option<u32> {
+        self.srid
+    }
 }
 
-#[cfg(feature = "diesel")]
 impl<P> ReadFromSql for MultiPoint<P>
 where
-    P: PointT + Debug + Clone,
+    P: PointT,
 {
-    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes);
-        let end = r.read_u8()?;
-        if end == BIG_ENDIAN {
-            read_multipoint::<BigEndian, P>(&mut r)
-        } else {
-            read_multipoint::<LittleEndian, P>(&mut r)
+    fn read_body<Endianness, Reader>(
+        header: crate::ewkb::EwkbHeader,
+        reader: &mut Reader,
+    ) -> Result<Self, std::io::Error>
+    where
+        Reader: std::io::Read,
+        Endianness: byteorder::ByteOrder,
+    {
+        let len = reader.read_u32::<Endianness>()?;
+        let mut mp = MultiPoint::with_capacity(header.srid, len as usize);
+        for _i in 0..len {
+            // skip 1 byte for byte order and 4 bytes for point type
+            reader.read_u8()?;
+            reader.read_u32::<Endianness>()?;
+            mp.add_point(P::read_body::<Endianness, Reader>(header, reader)?);
         }
+        Ok(mp)
     }
 }
 
-#[cfg(feature = "diesel")]
 impl<P> WriteToSql for MultiPoint<P>
 where
-    P: PointT + EwkbSerializable,
+    P: PointT,
 {
-    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    fn write_body<Writer>(&self, out: &mut Writer) -> Result<(), std::io::Error>
     where
-        W: std::io::Write,
+        Writer: std::io::Write,
     {
-        write_ewkb_header(self, self.srid, out)?;
-        // size and points
         out.write_u32::<LittleEndian>(self.points.len() as u32)?;
         for point in self.points.iter() {
-            write_point(point, None, out)?;
+            point.write_to_sql::<Writer>(false, out)?;
         }
-        Ok(diesel::serialize::IsNull::No)
+        Ok(())
     }
-}
-
-#[cfg(feature = "diesel")]
-fn read_multipoint<T, P>(cursor: &mut Cursor<&[u8]>) -> diesel::deserialize::Result<MultiPoint<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::MultiPoint)?;
-    read_multi_point_body::<T, P>(g_header.g_type, g_header.srid, cursor)
-}
-
-#[cfg(feature = "diesel")]
-pub fn read_multi_point_body<T, P>(
-    g_type: u32,
-    srid: Option<u32>,
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<MultiPoint<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let len = cursor.read_u32::<T>()?;
-    let mut mp = MultiPoint::with_capacity(srid, len as usize);
-    for _i in 0..len {
-        // skip 1 byte for byte order and 4 bytes for point type
-        cursor.read_u8()?;
-        cursor.read_u32::<T>()?;
-        mp.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
-    }
-    Ok(mp)
 }

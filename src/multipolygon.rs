@@ -1,22 +1,14 @@
-use std::fmt::Debug;
-use std::io::Cursor;
-
-#[cfg(feature = "diesel")]
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 use crate::{
-    ewkb::{read_ewkb_header, write_ewkb_header},
-    polygon::read_polygon_body,
-    write_to_read_from_sql::{ReadFromSql, WriteToSql},
-};
-use crate::{
-    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType},
     points::Dimension,
     types::*,
 };
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 impl<P> MultiPolygon<P>
 where
-    P: PointT + Clone,
+    P: PointT,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self::with_capacity(srid, 0)
@@ -41,23 +33,43 @@ where
         self
     }
 
-    pub fn add_point(&mut self, point: P) -> &mut Self {
+    /// Adds a point to the polygon.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `point` - The point to add.
+    /// 
+    /// # Errors
+    /// 
+    /// * `IncompatibleSpatialReferenceSystemIdentifier` - If the point's SRID does not match the polygon's SRID.
+    /// 
+    pub fn add_point(&mut self, point: P) -> Result<&mut Self, crate::errors::Error> {
         if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
-        self.polygons.last_mut().unwrap().add_point(point);
-        self
+        self.polygons.last_mut().unwrap().add_point(point)?;
+        Ok(self)
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> &mut Self {
+    /// Adds multiple points to the polygon.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `points` - The points to add.
+    /// 
+    /// # Errors
+    /// 
+    /// * `IncompatibleSpatialReferenceSystemIdentifier` - If the point's SRID does not match the polygon's SRID.
+    /// 
+    pub fn add_points(&mut self, points: impl IntoIterator<Item = P>) -> Result<&mut Self, crate::errors::Error> {
         if self.polygons.is_empty() {
             self.add_empty_polygon();
         }
         let last = self.polygons.last_mut().unwrap();
         for point in points {
-            last.add_point(point);
+            last.add_point(point)?;
         }
-        self
+        Ok(self)
     }
 
     pub fn dimension(&self) -> u32 {
@@ -71,8 +83,12 @@ where
 
 impl<P> EwkbSerializable for MultiPolygon<P>
 where
-    P: PointT + Clone,
+    P: PointT,
 {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::MultiPolygon
+    }
+
     fn geometry_type(&self) -> u32 {
         let mut g_type = GeometryType::MultiPolygon as u32;
         if let Some(polygon) = self.polygons.first() {
@@ -80,75 +96,53 @@ where
         }
         g_type
     }
+
+    fn srid(&self) -> Option<u32> {
+        self.srid
+    }
 }
 
-#[cfg(feature = "diesel")]
 impl<P> ReadFromSql for MultiPolygon<P>
 where
-    P: PointT + Debug + Clone,
+    P: PointT,
 {
-    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes);
-        let end = r.read_u8()?;
-        if end == BIG_ENDIAN {
-            read_multi_polygon::<BigEndian, P>(&mut r)
-        } else {
-            read_multi_polygon::<LittleEndian, P>(&mut r)
+    fn read_body<Endianness, Reader>(
+        header: crate::ewkb::EwkbHeader,
+        reader: &mut Reader,
+    ) -> Result<Self, std::io::Error>
+    where
+        Reader: std::io::Read,
+        Endianness: byteorder::ByteOrder,
+    {
+        let polygons_n = reader.read_u32::<Endianness>()?;
+        let mut polygon = MultiPolygon::with_capacity(header.srid, polygons_n as usize);
+
+        for _i in 0..polygons_n {
+            // skip 1 byte for byte order and 4 bytes for point type
+            reader.read_u8()?;
+            reader.read_u32::<Endianness>()?;
+            polygon
+                .polygons
+                .push(Polygon::<P>::read_body::<Endianness, Reader>(
+                    header, reader,
+                )?);
         }
+        Ok(polygon)
     }
 }
 
-#[cfg(feature = "diesel")]
 impl<P> WriteToSql for MultiPolygon<P>
 where
-    P: PointT + Clone + EwkbSerializable,
+    P: PointT,
 {
-    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    fn write_body<Writer>(&self, out: &mut Writer) -> Result<(), std::io::Error>
     where
-        W: std::io::Write,
+        Writer: std::io::Write,
     {
-        write_ewkb_header(self, self.srid, out)?;
-        // number of polygons
         out.write_u32::<LittleEndian>(self.polygons.len() as u32)?;
         for polygon in self.polygons.iter() {
-            polygon.write_to_sql(out)?;
+            polygon.write_to_sql(false, out)?;
         }
-        Ok(diesel::serialize::IsNull::No)
+        Ok(())
     }
-}
-
-#[cfg(feature = "diesel")]
-fn read_multi_polygon<T, P>(
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<MultiPolygon<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::MultiPolygon)?;
-    read_multi_polygon_body::<T, P>(g_header.g_type, g_header.srid, cursor)
-}
-
-#[cfg(feature = "diesel")]
-pub fn read_multi_polygon_body<T, P>(
-    g_type: u32,
-    srid: Option<u32>,
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<MultiPolygon<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let polygons_n = cursor.read_u32::<T>()?;
-    let mut polygon = MultiPolygon::with_capacity(srid, polygons_n as usize);
-
-    for _i in 0..polygons_n {
-        // skip 1 byte for byte order and 4 bytes for point type
-        cursor.read_u8()?;
-        cursor.read_u32::<T>()?;
-        polygon
-            .polygons
-            .push(read_polygon_body::<T, P>(g_type, srid, cursor)?);
-    }
-    Ok(polygon)
 }

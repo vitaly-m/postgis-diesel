@@ -1,29 +1,16 @@
-use std::fmt::Debug;
-use std::io::Cursor;
-
 use crate::{
-    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType},
     points::Dimension,
-    polygon::*,
     types::*,
 };
 
-#[cfg(feature = "diesel")]
-use crate::{
-    ewkb::{read_ewkb_header, write_ewkb_header},
-    linestring::read_linestring_body,
-    multiline::read_multiline_body,
-    multipoint::read_multi_point_body,
-    multipolygon::read_multi_polygon_body,
-    points::{read_point_coordinates, write_point},
-    write_to_read_from_sql::{ReadFromSql, WriteToSql},
-};
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 impl<P> GeometryCollection<P>
 where
-    P: PointT + Clone,
+    P: PointT,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self {
@@ -58,8 +45,12 @@ where
 
 impl<P> EwkbSerializable for GeometryCollection<P>
 where
-    P: PointT + Clone,
+    P: PointT,
 {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::GeometryCollection
+    }
+
     fn geometry_type(&self) -> u32 {
         let mut g_type = GeometryType::GeometryCollection as u32;
         if let Some(polygon) = self.geometries.first() {
@@ -67,104 +58,93 @@ where
         }
         g_type
     }
-}
 
-#[cfg(feature = "diesel")]
-impl<P> ReadFromSql for GeometryCollection<P>
-where
-    P: PointT + Debug + Clone,
-{
-    fn read_from_sql(bytes: &[u8]) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes);
-        let end = r.read_u8()?;
-        if end == BIG_ENDIAN {
-            read_geometry_collection::<BigEndian, P>(&mut r)
-        } else {
-            read_geometry_collection::<LittleEndian, P>(&mut r)
-        }
+    fn srid(&self) -> Option<u32> {
+        self.srid
     }
 }
 
-#[cfg(feature = "diesel")]
+impl<P> ReadFromSql for GeometryCollection<P>
+where
+    P: PointT,
+{
+    fn read_body<Endianness, Reader>(
+        header: crate::ewkb::EwkbHeader,
+        reader: &mut Reader,
+    ) -> Result<Self, std::io::Error>
+    where
+        Reader: std::io::Read,
+        Endianness: byteorder::ByteOrder,
+    {
+        let geometries_n = reader.read_u32::<Endianness>()?;
+        let mut g_collection = GeometryCollection::new(header.srid);
+        for _i in 0..geometries_n {
+            // skip 1 byte for byte order and 4 bytes for point type
+            reader.read_u8()?;
+            let geom_type = GeometryType::from(reader.read_u32::<Endianness>()?);
+            let g_container = match geom_type {
+                GeometryType::Point => {
+                    GeometryContainer::Point(P::read_body::<Endianness, Reader>(header, reader)?)
+                }
+                GeometryType::LineString => {
+                    GeometryContainer::LineString(LineString::read_body::<Endianness, Reader>(
+                        header, reader,
+                    )?)
+                }
+                GeometryType::Polygon => {
+                    GeometryContainer::Polygon(Polygon::read_body::<Endianness, Reader>(
+                        header, reader,
+                    )?)
+                }
+                GeometryType::MultiPoint => {
+                    GeometryContainer::MultiPoint(MultiPoint::read_body::<Endianness, Reader>(
+                        header, reader,
+                    )?)
+                }
+                GeometryType::MultiLineString => {
+                    GeometryContainer::MultiLineString(MultiLineString::read_body::<
+                        Endianness,
+                        Reader,
+                    >(header, reader)?)
+                }
+                GeometryType::MultiPolygon => GeometryContainer::MultiPolygon(
+                    MultiPolygon::read_body::<Endianness, Reader>(header, reader)?,
+                ),
+                GeometryType::GeometryCollection => {
+                    GeometryContainer::GeometryCollection(GeometryCollection::read_body::<
+                        Endianness,
+                        Reader,
+                    >(header, reader)?)
+                }
+            };
+            g_collection.geometries.push(g_container);
+        }
+        Ok(g_collection)
+    }
+}
+
 impl<P> WriteToSql for GeometryCollection<P>
 where
-    P: PointT + Clone  + Debug+ EwkbSerializable,
+    P: PointT,
 {
-    fn write_to_sql<W>(&self, out: &mut W) -> diesel::serialize::Result
+    fn write_body<Writer>(&self, out: &mut Writer) -> Result<(), std::io::Error>
     where
-        W: std::io::Write,
+        Writer: std::io::Write,
     {
-        write_ewkb_header(self, self.srid, out)?;
         out.write_u32::<LittleEndian>(self.geometries.len() as u32)?;
         for g_container in self.geometries.iter() {
             match g_container {
-                GeometryContainer::Point(g) => write_point(g, None, out)?,
-                GeometryContainer::LineString(g) => g.write_to_sql(out)?,
-                GeometryContainer::Polygon(g) => g.write_to_sql(out)?,
-                GeometryContainer::MultiPoint(g) => g.write_to_sql(out)?,
-                GeometryContainer::MultiLineString(g) => g.write_to_sql(out)?,
-                GeometryContainer::MultiPolygon(g) => g.write_to_sql(out)?,
-                GeometryContainer::GeometryCollection(g) => g.write_to_sql(out)?,
+                GeometryContainer::Point(g) => g.write_to_sql(false, out)?,
+                GeometryContainer::LineString(g) => g.write_to_sql(false, out)?,
+                GeometryContainer::Polygon(g) => g.write_to_sql(false, out)?,
+                GeometryContainer::MultiPoint(g) => g.write_to_sql(false, out)?,
+                GeometryContainer::MultiLineString(g) => g.write_to_sql(false, out)?,
+                GeometryContainer::MultiPolygon(g) => g.write_to_sql(false, out)?,
+                GeometryContainer::GeometryCollection(g) => g.write_to_sql(false, out)?,
             };
         }
-        Ok(diesel::serialize::IsNull::No)
+        Ok(())
     }
-}
-
-#[cfg(feature = "diesel")]
-fn read_geometry_collection<T, P>(
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<GeometryCollection<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone + Debug,
-{
-    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::GeometryCollection)?;
-    read_geometry_collection_body::<T, P>(g_header.g_type, g_header.srid, cursor)
-}
-
-#[cfg(feature = "diesel")]
-pub fn read_geometry_collection_body<T, P>(
-    g_type: u32,
-    srid: Option<u32>,
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<GeometryCollection<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone + Debug,
-{
-    let geometries_n = cursor.read_u32::<T>()?;
-    let mut g_collection = GeometryCollection::new(srid);
-    for _i in 0..geometries_n {
-        // skip 1 byte for byte order and 4 bytes for point type
-        cursor.read_u8()?;
-        let geom_type = GeometryType::from(cursor.read_u32::<T>()?);
-        let g_container = match geom_type {
-            GeometryType::Point => {
-                GeometryContainer::Point(read_point_coordinates::<T, P>(cursor, g_type, srid)?)
-            }
-            GeometryType::LineString => {
-                GeometryContainer::LineString(read_linestring_body::<T, P>(g_type, srid, cursor)?)
-            }
-            GeometryType::Polygon => {
-                GeometryContainer::Polygon(read_polygon_body::<T, P>(g_type, srid, cursor)?)
-            }
-            GeometryType::MultiPoint => {
-                GeometryContainer::MultiPoint(read_multi_point_body::<T, P>(g_type, srid, cursor)?)
-            }
-            GeometryType::MultiLineString => GeometryContainer::MultiLineString(
-                read_multiline_body::<T, P>(g_type, srid, cursor)?,
-            ),
-            GeometryType::MultiPolygon => GeometryContainer::MultiPolygon(
-                read_multi_polygon_body::<T, P>(g_type, srid, cursor)?,
-            ),
-            GeometryType::GeometryCollection => GeometryContainer::GeometryCollection(
-                read_geometry_collection_body::<T, P>(g_type, srid, cursor)?,
-            ),
-        };
-        g_collection.geometries.push(g_container);
-    }
-    Ok(g_collection)
 }
 
 #[cfg(test)]
@@ -198,7 +178,7 @@ mod tests {
             Dimension::None as u32,
             GeometryContainer::LineString(
                 LineString::new(None)
-                    .add_point(Point::new(0.0, 0.0, None))
+                    .add_point(Point::new(0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -207,7 +187,7 @@ mod tests {
             Dimension::Z as u32,
             GeometryContainer::LineString(
                 LineString::new(None)
-                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -216,7 +196,7 @@ mod tests {
             Dimension::M as u32,
             GeometryContainer::LineString(
                 LineString::new(None)
-                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -225,7 +205,7 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::LineString(
                 LineString::new(None)
-                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -238,7 +218,7 @@ mod tests {
             Dimension::None as u32,
             GeometryContainer::Polygon(
                 Polygon::new(None)
-                    .add_point(Point::new(0.0, 0.0, None))
+                    .add_point(Point::new(0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -247,7 +227,7 @@ mod tests {
             Dimension::Z as u32,
             GeometryContainer::Polygon(
                 Polygon::new(None)
-                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -256,7 +236,7 @@ mod tests {
             Dimension::M as u32,
             GeometryContainer::Polygon(
                 Polygon::new(None)
-                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -265,7 +245,7 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::Polygon(
                 Polygon::new(None)
-                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -318,7 +298,7 @@ mod tests {
             Dimension::None as u32,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
-                    .add_point(Point::new(0.0, 0.0, None))
+                    .add_point(Point::new(0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -327,7 +307,7 @@ mod tests {
             Dimension::Z as u32,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
-                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -336,7 +316,7 @@ mod tests {
             Dimension::M as u32,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
-                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -345,7 +325,7 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
-                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -358,7 +338,7 @@ mod tests {
             Dimension::None as u32,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
-                    .add_point(Point::new(0.0, 0.0, None))
+                    .add_point(Point::new(0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -367,7 +347,7 @@ mod tests {
             Dimension::Z as u32,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
-                    .add_point(PointZ::new(0.0, 0.0, 0.0, None))
+                    .add_point(PointZ::new(0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -376,7 +356,7 @@ mod tests {
             Dimension::M as u32,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
-                    .add_point(PointM::new(0.0, 0.0, 0.0, None))
+                    .add_point(PointM::new(0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
@@ -385,7 +365,7 @@ mod tests {
             Dimension::ZM as u32,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
-                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
+                    .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).unwrap()
                     .to_owned()
             )
             .dimension()
