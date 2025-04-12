@@ -74,7 +74,7 @@ where
     }
 
     pub fn dimension(&self) -> u32 {
-        let mut dimension = Dimension::None as u32;
+        let mut dimension = Dimension::NONE;
         if let Some(line) = self.lines.first() {
             dimension |= line.dimension();
         }

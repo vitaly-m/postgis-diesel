@@ -76,7 +76,7 @@ where
     }
 
     pub fn dimension(&self) -> u32 {
-        let mut dimension = Dimension::None as u32;
+        let mut dimension = Dimension::NONE;
         if let Some(polygon) = self.polygons.first() {
             dimension |= polygon.dimension();
         }

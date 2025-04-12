@@ -79,7 +79,7 @@ where
     }
 
     pub fn dimension(&self) -> u32 {
-        let mut dimension = Dimension::None as u32;
+        let mut dimension = Dimension::NONE;
         if let Some(ring) = self.rings.first() {
             if let Some(point) = ring.first() {
                 dimension |= point.dimension();

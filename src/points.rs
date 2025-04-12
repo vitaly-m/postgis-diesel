@@ -6,11 +6,14 @@ use crate::{
 };
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-pub enum Dimension {
-    None = 0,
-    Z = 0x80000000,
-    M = 0x40000000,
-    ZM = 0x40000000 | 0x80000000,
+#[derive(Debug, Clone, PartialEq)]
+pub struct Dimension;
+
+impl Dimension {
+    pub const NONE: u32 = 0;
+    pub const Z: u32 = 0x80000000;
+    pub const M: u32 = 0x40000000;
+    pub const ZM: u32 = Self::Z | Self::M;
 }
 
 impl EwkbSerializable for Point {
@@ -33,7 +36,7 @@ impl EwkbSerializable for PointZ {
     }
 
     fn geometry_type(&self) -> u32 {
-        GeometryType::Point as u32 | Dimension::Z as u32
+        GeometryType::Point as u32 | Dimension::Z
     }
 
     fn srid(&self) -> Option<u32> {
@@ -47,7 +50,7 @@ impl EwkbSerializable for PointM {
     }
 
     fn geometry_type(&self) -> u32 {
-        GeometryType::Point as u32 | Dimension::M as u32
+        GeometryType::Point as u32 | Dimension::M
     }
 
     fn srid(&self) -> Option<u32> {
@@ -61,7 +64,7 @@ impl EwkbSerializable for PointZM {
     }
 
     fn geometry_type(&self) -> u32 {
-        GeometryType::Point as u32 | Dimension::ZM as u32
+        GeometryType::Point as u32 | Dimension::ZM
     }
     fn srid(&self) -> Option<u32> {
         self.srid
@@ -114,7 +117,7 @@ impl PointT for Point {
     }
 
     fn dimension(&self) -> u32 {
-        0
+        Dimension::NONE
     }
 
     fn new_point(
@@ -156,7 +159,7 @@ impl PointT for PointZ {
     }
 
     fn dimension(&self) -> u32 {
-        Dimension::Z as u32
+        Dimension::Z
     }
 
     fn new_point(
@@ -207,7 +210,7 @@ impl PointT for PointM {
     }
 
     fn dimension(&self) -> u32 {
-        Dimension::M as u32
+        Dimension::M
     }
 
     fn new_point(
@@ -258,7 +261,7 @@ impl PointT for PointZM {
     }
 
     fn dimension(&self) -> u32 {
-        Dimension::ZM as u32
+        Dimension::ZM
     }
 
     fn new_point(
@@ -316,11 +319,11 @@ where
     let x = reader.read_f64::<Endianness>()?;
     let y = reader.read_f64::<Endianness>()?;
     let mut z = None;
-    if header.g_type & Dimension::Z as u32 == Dimension::Z as u32 {
+    if header.g_type & Dimension::Z == Dimension::Z {
         z = Some(reader.read_f64::<Endianness>()?);
     }
     let mut m = None;
-    if header.g_type & Dimension::M as u32 == Dimension::M as u32 {
+    if header.g_type & Dimension::M == Dimension::M {
         m = Some(reader.read_f64::<Endianness>()?);
     }
     Ok(P::new_point(x, y, header.srid, z, m)?)
@@ -359,19 +362,19 @@ mod tests {
     #[test]
     fn test_point_dimensions() {
         assert_eq!(
-            Dimension::None as u32,
+            Dimension::NONE,
             Point::new(0.0, 0.0, None).dimension()
         );
         assert_eq!(
-            Dimension::Z as u32,
+            Dimension::Z,
             PointZ::new(0.0, 0.0, 0.0, None).dimension()
         );
         assert_eq!(
-            Dimension::M as u32,
+            Dimension::M,
             PointM::new(0.0, 0.0, 0.0, None).dimension()
         );
         assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             PointZM::new(0.0, 0.0, 0.0, 0.0, None).dimension()
         );
     }

@@ -35,7 +35,7 @@ where
     }
 
     pub fn dimension(&self) -> u32 {
-        let mut dimension = Dimension::None as u32;
+        let mut dimension = Dimension::NONE;
         if let Some(geometry) = self.geometries.first() {
             dimension |= geometry.dimension();
         }
@@ -155,7 +155,7 @@ mod tests {
     #[test]
     fn test_dimensions_point() {
         assert_eq!(
-            Dimension::None as u32,
+            Dimension::NONE,
             GeometryContainer::Point(Point::new(0.0, 0.0, None)).dimension()
         );
         assert_eq!(
@@ -175,7 +175,7 @@ mod tests {
     #[test]
     fn test_dimensions_line_string() {
         assert_eq!(
-            Dimension::None as u32,
+            Dimension::NONE,
             GeometryContainer::LineString(
                 LineString::new(None)
                     .add_point(Point::new(0.0, 0.0, None))
@@ -219,7 +219,7 @@ mod tests {
     #[test]
     fn test_dimensions_polygon() {
         assert_eq!(
-            Dimension::None as u32,
+            Dimension::NONE,
             GeometryContainer::Polygon(
                 Polygon::new(None)
                     .add_point(Point::new(0.0, 0.0, None))
@@ -263,7 +263,7 @@ mod tests {
     #[test]
     fn test_dimensions_multi_point() {
         assert_eq!(
-            Dimension::None as u32,
+            Dimension::NONE,
             GeometryContainer::MultiPoint(
                 MultiPoint::new(None)
                     .add_point(Point::new(0.0, 0.0, None))
@@ -303,7 +303,7 @@ mod tests {
     #[test]
     fn test_dimensions_multi_line_string() {
         assert_eq!(
-            Dimension::None as u32,
+            Dimension::NONE,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
                     .add_point(Point::new(0.0, 0.0, None))
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn test_dimensions_multi_polygon() {
         assert_eq!(
-            Dimension::None as u32,
+            Dimension::NONE,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
                     .add_point(Point::new(0.0, 0.0, None))
@@ -391,7 +391,7 @@ mod tests {
     #[test]
     fn test_dimensions_geometry_collection() {
         assert_eq!(
-            Dimension::None as u32,
+            Dimension::NONE,
             GeometryContainer::GeometryCollection(
                 GeometryCollection::new(None)
                     .add_geometry(GeometryContainer::Point(Point::new(0.0, 0.0, None)))
