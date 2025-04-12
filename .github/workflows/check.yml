@@ -2,8 +2,7 @@ name: Check Codebase
 
 on:
   workflow_run:
-    workflows:
-      - Check Code Formatting
+    workflows: ["Check Code Formatting"]
     types:
       - completed
 
