@@ -1,9 +1,6 @@
 #[cfg(feature = "diesel")]
 #[macro_use]
 extern crate diesel;
-#[cfg(any(feature = "serde", feature = "serde_geojson"))]
-#[macro_use]
-extern crate serde;
 
 #[cfg(feature = "schemars")]
 #[macro_use]

@@ -4,7 +4,6 @@ use byteorder::{BigEndian, LittleEndian};
 
 use crate::ewkb::{EwkbHeader, EwkbSerializable, BIG_ENDIAN};
 
-#[cfg(feature = "diesel")]
 pub trait WriteToSql: EwkbSerializable {
     fn write_to_sql<Writer>(
         &self,
