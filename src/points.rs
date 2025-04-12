@@ -361,18 +361,9 @@ mod tests {
 
     #[test]
     fn test_point_dimensions() {
-        assert_eq!(
-            Dimension::NONE,
-            Point::new(0.0, 0.0, None).dimension()
-        );
-        assert_eq!(
-            Dimension::Z,
-            PointZ::new(0.0, 0.0, 0.0, None).dimension()
-        );
-        assert_eq!(
-            Dimension::M,
-            PointM::new(0.0, 0.0, 0.0, None).dimension()
-        );
+        assert_eq!(Dimension::NONE, Point::new(0.0, 0.0, None).dimension());
+        assert_eq!(Dimension::Z, PointZ::new(0.0, 0.0, 0.0, None).dimension());
+        assert_eq!(Dimension::M, PointM::new(0.0, 0.0, 0.0, None).dimension());
         assert_eq!(
             Dimension::ZM,
             PointZM::new(0.0, 0.0, 0.0, 0.0, None).dimension()
