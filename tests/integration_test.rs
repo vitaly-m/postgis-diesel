@@ -1,10 +1,9 @@
+#![cfg(feature = "postgres")]
 #[macro_use]
 extern crate diesel;
 
 use std::env;
 use std::sync::Once;
-
-// use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};

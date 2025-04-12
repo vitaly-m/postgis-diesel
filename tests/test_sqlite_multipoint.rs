@@ -1,3 +1,4 @@
+#![cfg(feature = "sqlite")]
 //! Submodule to test the use the `MultiPoint` type with SQLite backend.
 
 #[macro_use]

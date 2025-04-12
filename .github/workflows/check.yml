@@ -1,0 +1,31 @@
+name: Check Codebase
+
+on:
+  workflow_run:
+    workflows:
+      - Check Code Formatting
+    types:
+      - completed
+
+jobs:
+  check:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Install dependencies
+        run: rustup component add clippy
+
+      - name: Run checks with features
+        run: |
+          cargo check --features "postgres" "sqlite" "diesel" "serde"
+          cargo clippy --features "postgres" "sqlite" "diesel" "serde"" -- -D warnings

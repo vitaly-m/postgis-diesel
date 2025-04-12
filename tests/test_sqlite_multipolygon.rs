@@ -1,3 +1,4 @@
+#![cfg(feature = "sqlite")]
 //! Submodule to test the use the `MultiPolygon` type with SQLite backend.
 
 #[macro_use]
