@@ -23,21 +23,7 @@ macro_rules! impl_to_sql_geometry {
 				P: PointT + Debug + Clone,
 			{
 				fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-					println!("postgres bytes {}: {:?}", stringify!($type), bytes.as_bytes());
 					Self::read_from_sql(bytes.as_bytes())
-				}
-			}
-
-			#[cfg(feature = "sqlite")]
-			impl<P> diesel::deserialize::FromSql<Geometry, diesel::sqlite::Sqlite> for $type
-			where
-				P: PointT + Debug + Clone,
-			{
-				fn from_sql(
-					mut bytes: diesel::sqlite::SqliteValue<'_, '_, '_>,
-				) -> diesel::deserialize::Result<Self> {
-					println!("sqlite bytes {}: {:?}", stringify!($type), bytes.read_blob());
-					Self::read_from_sql(bytes.read_blob())
 				}
 			}
 
@@ -50,7 +36,21 @@ macro_rules! impl_to_sql_geometry {
 					&self,
 					out: &mut diesel::serialize::Output<diesel::pg::Pg>,
 				) -> diesel::serialize::Result {
-					self.write_to_sql(out)
+					let outcome = self.write_to_sql(out);
+					println!("outcome: {:?}", out);
+					outcome
+				}
+			}
+
+			#[cfg(feature = "sqlite")]
+			impl<P> diesel::deserialize::FromSql<Geometry, diesel::sqlite::Sqlite> for $type
+			where
+				P: PointT + Debug + Clone,
+			{
+				fn from_sql(
+					mut bytes: diesel::sqlite::SqliteValue<'_, '_, '_>,
+				) -> diesel::deserialize::Result<Self> {
+					Self::read_from_sql(bytes.read_blob())
 				}
 			}
 
@@ -65,6 +65,7 @@ macro_rules! impl_to_sql_geometry {
 				) -> diesel::serialize::Result {
 					let mut buffer = Vec::new();
 					let output = self.write_to_sql(&mut buffer)?;
+					let decoded = Self::read_from_sql(buffer.as_ref()).unwrap();
 					out.set_value(buffer);
 					Ok(output)
 				}
