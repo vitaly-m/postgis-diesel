@@ -26,7 +26,7 @@ serde_json = "1.0"
 [features]
 default = ["postgres"]
 serde = ["dep:serde"]
-serde_geojson = ["dep:serde"]
+serde_geojson = ["serde"]
 schemars = ["dep:schemars"]
 diesel = ["dep:diesel"]
 postgres = ["diesel", "diesel/postgres"]

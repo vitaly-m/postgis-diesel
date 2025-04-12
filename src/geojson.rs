@@ -331,7 +331,7 @@ impl<T: GeoJsonGeometry<f64> + PointT> GeoJsonGeometry<Vec<Vec<f64>>> for Polygo
         for ring in coordinates {
             polygon.add_ring();
             for p in ring {
-                polygon.add_point(T::from_geo_coordinates(p)?);
+                polygon.add_point(T::from_geo_coordinates(p)?).unwrap();
             }
         }
         Ok(polygon)
@@ -617,9 +617,15 @@ mod tests {
             lines: vec![],
             srid: WGS84_SRID,
         };
-        multi_line_string.add_point(Point::new(1.0, 2.0, WGS84_SRID));
-        multi_line_string.add_point(Point::new(3.0, 4.0, WGS84_SRID));
-        multi_line_string.add_point(Point::new(5.0, 6.0, WGS84_SRID));
+        multi_line_string
+            .add_point(Point::new(1.0, 2.0, WGS84_SRID))
+            .unwrap();
+        multi_line_string
+            .add_point(Point::new(3.0, 4.0, WGS84_SRID))
+            .unwrap();
+        multi_line_string
+            .add_point(Point::new(5.0, 6.0, WGS84_SRID))
+            .unwrap();
 
         let expected_json =
             "{\"type\":\"MultiLineString\",\"coordinates\":[[[1.0,2.0],[3.0,4.0],[5.0,6.0]]]}";
@@ -635,10 +641,10 @@ mod tests {
             rings: vec![],
             srid: WGS84_SRID,
         };
-        polygon.add_point(Point::new(1.0, 2.0, WGS84_SRID));
-        polygon.add_point(Point::new(3.0, 4.0, WGS84_SRID));
-        polygon.add_point(Point::new(5.0, 6.0, WGS84_SRID));
-        polygon.add_point(Point::new(1.0, 2.0, WGS84_SRID));
+        polygon.add_point(Point::new(1.0, 2.0, WGS84_SRID)).unwrap();
+        polygon.add_point(Point::new(3.0, 4.0, WGS84_SRID)).unwrap();
+        polygon.add_point(Point::new(5.0, 6.0, WGS84_SRID)).unwrap();
+        polygon.add_point(Point::new(1.0, 2.0, WGS84_SRID)).unwrap();
 
         let expected_json =
             "{\"type\":\"Polygon\",\"coordinates\":[[[1.0,2.0],[3.0,4.0],[5.0,6.0],[1.0,2.0]]]}";
@@ -654,10 +660,18 @@ mod tests {
             rings: vec![],
             srid: WGS84_SRID,
         };
-        polygon.add_point(PointZ::new(1.0, 2.0, 3.0, WGS84_SRID));
-        polygon.add_point(PointZ::new(4.0, 5.0, 6.0, WGS84_SRID));
-        polygon.add_point(PointZ::new(7.0, 8.0, 9.0, WGS84_SRID));
-        polygon.add_point(PointZ::new(1.0, 2.0, 3.0, WGS84_SRID));
+        polygon
+            .add_point(PointZ::new(1.0, 2.0, 3.0, WGS84_SRID))
+            .unwrap();
+        polygon
+            .add_point(PointZ::new(4.0, 5.0, 6.0, WGS84_SRID))
+            .unwrap();
+        polygon
+            .add_point(PointZ::new(7.0, 8.0, 9.0, WGS84_SRID))
+            .unwrap();
+        polygon
+            .add_point(PointZ::new(1.0, 2.0, 3.0, WGS84_SRID))
+            .unwrap();
 
         let multi_polygon = MultiPolygon::<PointZ> {
             polygons: vec![polygon],
@@ -679,8 +693,12 @@ mod tests {
             points: vec![],
             srid: WGS84_SRID,
         };
-        line_string.add_point(Point::new(3.0, 4.0, WGS84_SRID));
-        line_string.add_point(Point::new(5.0, 6.0, WGS84_SRID));
+        line_string
+            .add_point(Point::new(3.0, 4.0, WGS84_SRID))
+            .unwrap();
+        line_string
+            .add_point(Point::new(5.0, 6.0, WGS84_SRID))
+            .unwrap();
 
         let geometry_collection = GeometryCollection::<Point> {
             geometries: vec![

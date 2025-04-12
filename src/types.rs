@@ -51,7 +51,10 @@ impl std::error::Error for PointConstructorError {}
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct Point {
     pub x: f64,
@@ -77,7 +80,10 @@ pub struct Point {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct PointZ {
     pub x: f64,
@@ -104,7 +110,7 @@ pub struct PointZ {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct PointM {
     pub x: f64,
@@ -131,7 +137,7 @@ pub struct PointM {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct PointZM {
     pub x: f64,
@@ -178,7 +184,10 @@ pub trait PointT: ReadFromSql + WriteToSql + Copy + core::fmt::Debug {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct MultiPoint<T> {
     pub points: Vec<T>,
@@ -203,7 +212,10 @@ pub struct MultiPoint<T> {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct LineString<T> {
     pub points: Vec<T>,
@@ -228,7 +240,10 @@ pub struct LineString<T> {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct MultiLineString<T> {
     pub lines: Vec<LineString<T>>,
@@ -253,7 +268,10 @@ pub struct MultiLineString<T> {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct Polygon<T> {
     pub rings: Vec<Vec<T>>,
@@ -278,7 +296,10 @@ pub struct Polygon<T> {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
 pub struct MultiPolygon<T> {
     pub polygons: Vec<Polygon<T>>,
@@ -296,8 +317,11 @@ pub struct MultiPolygon<T> {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[cfg_attr(feature = "serde_geojson", derive(Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize)
+)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize))]
 #[cfg_attr(
     feature = "serde_geojson",
     serde(
@@ -335,8 +359,20 @@ pub enum GeometryContainer<T> {
 )]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geometry))]
 #[cfg_attr(feature = "diesel", diesel(sql_type = Geography))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
+#[cfg_attr(
+    feature = "serde_geojson",
+    serde(
+        tag = "type",
+        bound(
+            deserialize = "T: crate::geojson::GeoJsonGeometry<f64> + PointT + serde::Deserialize<'de>"
+        )
+    )
+)]
 pub struct GeometryCollection<T> {
     pub geometries: Vec<GeometryContainer<T>>,
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
@@ -370,7 +406,7 @@ pub struct FeatureCollection<T, P: serde::Serialize> {
 }
 
 #[cfg(test)]
-#[cfg(feature = "serde")]
+#[cfg(all(feature = "serde", not(feature = "serde_geojson")))]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
