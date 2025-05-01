@@ -1,11 +1,14 @@
 # PostGIS Diesel
-Extension for Diesel framework to support PostGIS types. 
 
-# Example of Usage
-To ensure that the `Geometry` type is in scope, read [this guide] and add `postgis_diesel::sql_types::*` 
+Extension for Diesel framework to support [PostGIS types](https://postgis.net/). It provides support for both the `postgres` and, optionally, the `sqlite` backends. While the former is enabled by default with the `postgres` feature, the latter requires the `sqlite` feature to be enabled.
+
+## Example of Usage
+
+To ensure that the `Geometry` type is in scope, read [this guide] and add `postgis_diesel::sql_types::*`
 to the import_types key in your `diesel.toml` file.
 
 Assume that the table is defined like this:
+
 ```sql
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE TABLE geometry_samples
@@ -16,7 +19,19 @@ CREATE TABLE geometry_samples
 );
 ```
 
-Then Rust code may look like this:
+Or, if you are using `sqlite`, like this:
+
+```sql
+CREATE TABLE geometry_samples
+(
+    id         SERIAL                    PRIMARY KEY,
+    point      BLOB                      NOT NULL,
+    linestring BLOB                      NOT NULL
+);
+```
+
+Then Rust code (with either backends) may look like this:
+
 ```rust
 #[macro_use]
 extern crate diesel;
@@ -48,6 +63,7 @@ table! {
     }
 }
 ```
+
 See [integration test](tests/integration_test.rs) for more complete example.
 
 [this guide]: http://diesel.rs/guides/configuring-diesel-cli/
@@ -61,6 +77,7 @@ See [integration test](tests/integration_test.rs) for more complete example.
 5. Remove `src/full_schema.rs`, check that `diesel print-schema > src/schema.rs` will not add Geometry type.
 
 Example of patch file:
+
 ```diff
 @@ -1,12 +1,9 @@
  // @generated automatically by Diesel CLI.
@@ -91,13 +108,16 @@ Example of patch file:
          distance_meters -> Float8,
 ```
 
-# How to Run Tests
+## How to Run Tests
 
-1. Start Postgis DB 
+1. Start Postgis DB
+
 ```sh
 docker compose up
 ```
+
 2. Run tests
-```
+
+```sh
 cargo test
 ```
