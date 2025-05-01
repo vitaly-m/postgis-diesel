@@ -27,14 +27,14 @@ use postgis_diesel::types::*;
 #[derive(Insertable)]
 #[diesel(table_name = geometry_samples)]
 struct NewGeometrySample {
-    poinP: Point,
+    point: Point,
     linestring: LineString<Point>,
 }
 
 #[derive(Queryable)]
 struct GeometrySample {
     id: i32,
-    poinP: Point,
+    point: Point,
     linestring: LineString<Point>,
 }
 
