@@ -1,43 +1,73 @@
-use std::io::Cursor;
-
+use crate::ewkb::EwkbHeader;
 use crate::{
-    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType},
     types::*,
+    write_to_read_from_sql::{ReadFromSql, WriteToSql},
 };
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-#[cfg(feature = "diesel")]
-use crate::ewkb::{read_ewkb_header, write_ewkb_header};
-use crate::sql_types::*;
+#[derive(Debug, Clone, PartialEq)]
+pub struct Dimension;
 
-pub enum Dimension {
-    None = 0,
-    Z = 0x80000000,
-    M = 0x40000000,
-    ZM = 0x40000000 | 0x80000000,
+impl Dimension {
+    pub const NONE: u32 = 0;
+    pub const Z: u32 = 0x80000000;
+    pub const M: u32 = 0x40000000;
+    pub const ZM: u32 = Self::Z | Self::M;
 }
 
 impl EwkbSerializable for Point {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::Point
+    }
+
     fn geometry_type(&self) -> u32 {
         GeometryType::Point as u32
+    }
+
+    fn srid(&self) -> Option<u32> {
+        self.srid
     }
 }
 
 impl EwkbSerializable for PointZ {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::Point
+    }
+
     fn geometry_type(&self) -> u32 {
-        GeometryType::Point as u32 | Dimension::Z as u32
+        GeometryType::Point as u32 | Dimension::Z
+    }
+
+    fn srid(&self) -> Option<u32> {
+        self.srid
     }
 }
 
 impl EwkbSerializable for PointM {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::Point
+    }
+
     fn geometry_type(&self) -> u32 {
-        GeometryType::Point as u32 | Dimension::M as u32
+        GeometryType::Point as u32 | Dimension::M
+    }
+
+    fn srid(&self) -> Option<u32> {
+        self.srid
     }
 }
 
 impl EwkbSerializable for PointZM {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::Point
+    }
+
     fn geometry_type(&self) -> u32 {
-        GeometryType::Point as u32 | Dimension::ZM as u32
+        GeometryType::Point as u32 | Dimension::ZM
+    }
+    fn srid(&self) -> Option<u32> {
+        self.srid
     }
 }
 
@@ -87,7 +117,7 @@ impl PointT for Point {
     }
 
     fn dimension(&self) -> u32 {
-        0
+        Dimension::NONE
     }
 
     fn new_point(
@@ -129,7 +159,7 @@ impl PointT for PointZ {
     }
 
     fn dimension(&self) -> u32 {
-        Dimension::Z as u32
+        Dimension::Z
     }
 
     fn new_point(
@@ -180,7 +210,7 @@ impl PointT for PointM {
     }
 
     fn dimension(&self) -> u32 {
-        Dimension::M as u32
+        Dimension::M
     }
 
     fn new_point(
@@ -231,7 +261,7 @@ impl PointT for PointZM {
     }
 
     fn dimension(&self) -> u32 {
-        Dimension::ZM as u32
+        Dimension::ZM
     }
 
     fn new_point(
@@ -261,109 +291,68 @@ impl PointT for PointZM {
     }
 }
 
-macro_rules! impl_point_from_to_sql {
-    ($g:ident, $p:ident) => {
-        #[cfg(feature = "diesel")]
-        impl diesel::deserialize::FromSql<$g, diesel::pg::Pg> for $p {
-            fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-                let mut r = Cursor::new(bytes.as_bytes());
-                let end = r.read_u8()?;
-                if end == BIG_ENDIAN {
-                    read_point::<BigEndian, $p>(&mut r)
-                } else {
-                    read_point::<LittleEndian, $p>(&mut r)
-                }
-            }
-        }
+fn write_body<Writer, P>(point: &P, writer: &mut Writer) -> Result<(), std::io::Error>
+where
+    Writer: std::io::Write,
+    P: PointT,
+{
+    writer.write_f64::<LittleEndian>(point.get_x())?;
+    writer.write_f64::<LittleEndian>(point.get_y())?;
+    if point.get_z().is_some() {
+        writer.write_f64::<LittleEndian>(point.get_z().unwrap())?;
+    }
+    if point.get_m().is_some() {
+        writer.write_f64::<LittleEndian>(point.get_m().unwrap())?;
+    }
+    Ok(())
+}
 
-        #[cfg(feature = "diesel")]
-        impl diesel::serialize::ToSql<$g, diesel::pg::Pg> for $p {
-            fn to_sql(
-                &self,
-                out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-            ) -> diesel::serialize::Result {
-                write_point(self, self.get_srid(), out)?;
-                Ok(diesel::serialize::IsNull::No)
+fn read_body<Endianness, Reader, P>(
+    header: EwkbHeader,
+    reader: &mut Reader,
+) -> Result<P, std::io::Error>
+where
+    Reader: std::io::Read,
+    Endianness: byteorder::ByteOrder,
+    P: PointT,
+{
+    let x = reader.read_f64::<Endianness>()?;
+    let y = reader.read_f64::<Endianness>()?;
+    let mut z = None;
+    if header.g_type & Dimension::Z == Dimension::Z {
+        z = Some(reader.read_f64::<Endianness>()?);
+    }
+    let mut m = None;
+    if header.g_type & Dimension::M == Dimension::M {
+        m = Some(reader.read_f64::<Endianness>()?);
+    }
+    Ok(P::new_point(x, y, header.srid, z, m)?)
+}
+
+macro_rules! impl_point_read_write {
+    ($($point:ty),+) => {
+        $(
+            impl WriteToSql for $point {
+                fn write_body<Writer>(&self, out: &mut Writer) -> Result<(), std::io::Error>
+                where
+                    Writer: std::io::Write {
+                        write_body(self, out)
+                    }
             }
-        }
+
+            impl ReadFromSql for $point {
+                fn read_body<Endianness, Reader>(header: EwkbHeader, reader: &mut Reader) -> Result<Self, std::io::Error>
+                where
+                    Reader: std::io::Read,
+                    Endianness: byteorder::ByteOrder {
+                        read_body::<Endianness, Reader, Self>(header, reader)
+                    }
+            }
+        )+
     };
 }
 
-impl_point_from_to_sql!(Geometry, Point);
-impl_point_from_to_sql!(Geometry, PointZ);
-impl_point_from_to_sql!(Geometry, PointM);
-impl_point_from_to_sql!(Geometry, PointZM);
-
-impl_point_from_to_sql!(Geography, Point);
-impl_point_from_to_sql!(Geography, PointZ);
-impl_point_from_to_sql!(Geography, PointM);
-impl_point_from_to_sql!(Geography, PointZM);
-
-#[cfg(feature = "diesel")]
-pub fn write_point<T>(
-    point: &T,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable,
-{
-    write_ewkb_header(point, srid, out)?;
-    write_point_coordinates(point, out)?;
-    Ok(diesel::serialize::IsNull::No)
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_point_coordinates<T>(
-    point: &T,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT,
-{
-    out.write_f64::<LittleEndian>(point.get_x())?;
-    out.write_f64::<LittleEndian>(point.get_y())?;
-    if point.get_z().is_some() {
-        out.write_f64::<LittleEndian>(point.get_z().unwrap())?;
-    }
-    if point.get_m().is_some() {
-        out.write_f64::<LittleEndian>(point.get_m().unwrap())?;
-    }
-    Ok(diesel::serialize::IsNull::No)
-}
-
-#[cfg(feature = "diesel")]
-fn read_point<T, P>(cursor: &mut Cursor<&[u8]>) -> diesel::deserialize::Result<P>
-where
-    T: byteorder::ByteOrder,
-    P: PointT,
-{
-    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::Point)?;
-    read_point_coordinates::<T, P>(cursor, g_header.g_type, g_header.srid)
-}
-
-#[cfg(feature = "diesel")]
-pub fn read_point_coordinates<T, P>(
-    cursor: &mut Cursor<&[u8]>,
-    g_type: u32,
-    srid: Option<u32>,
-) -> diesel::deserialize::Result<P>
-where
-    T: byteorder::ByteOrder,
-    P: PointT,
-{
-    let x = cursor.read_f64::<T>()?;
-    let y = cursor.read_f64::<T>()?;
-    let mut z = None;
-    if g_type & Dimension::Z as u32 == Dimension::Z as u32 {
-        z = Some(cursor.read_f64::<T>()?);
-    }
-    let mut m = None;
-    if g_type & Dimension::M as u32 == Dimension::M as u32 {
-        m = Some(cursor.read_f64::<T>()?);
-    }
-    Ok(P::new_point(x, y, srid, z, m)?)
-}
+impl_point_read_write!(Point, PointZ, PointM, PointZM);
 
 #[cfg(test)]
 mod tests {
@@ -372,20 +361,11 @@ mod tests {
 
     #[test]
     fn test_point_dimensions() {
+        assert_eq!(Dimension::NONE, Point::new(0.0, 0.0, None).dimension());
+        assert_eq!(Dimension::Z, PointZ::new(0.0, 0.0, 0.0, None).dimension());
+        assert_eq!(Dimension::M, PointM::new(0.0, 0.0, 0.0, None).dimension());
         assert_eq!(
-            Dimension::None as u32,
-            Point::new(0.0, 0.0, None).dimension()
-        );
-        assert_eq!(
-            Dimension::Z as u32,
-            PointZ::new(0.0, 0.0, 0.0, None).dimension()
-        );
-        assert_eq!(
-            Dimension::M as u32,
-            PointM::new(0.0, 0.0, 0.0, None).dimension()
-        );
-        assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             PointZM::new(0.0, 0.0, 0.0, 0.0, None).dimension()
         );
     }

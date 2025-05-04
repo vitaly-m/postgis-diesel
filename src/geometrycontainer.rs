@@ -1,29 +1,13 @@
-use std::fmt::Debug;
-use std::io::Cursor;
-
 use crate::{
-    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
-    polygon::*,
-    sql_types::{Geography, Geometry},
+    ewkb::{EwkbSerializable, GeometryType},
     types::*,
 };
 
-#[cfg(feature = "diesel")]
-use crate::{
-    ewkb::read_ewkb_header,
-    geometrycollection::{read_geometry_collection_body, write_geometry_collection},
-    linestring::{read_linestring_body, write_linestring},
-    multiline::{read_multiline_body, write_multiline},
-    multipoint::{read_multi_point_body, write_multi_point},
-    multipolygon::{read_multi_polygon_body, write_multi_polygon},
-    points::{read_point_coordinates, write_point},
-};
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 
-use byteorder::{BigEndian, LittleEndian};
-
-impl<T> GeometryContainer<T>
+impl<P> GeometryContainer<P>
 where
-    T: PointT + Clone,
+    P: PointT,
 {
     pub fn dimension(&self) -> u32 {
         match self {
@@ -38,191 +22,109 @@ where
     }
 }
 
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for GeometryContainer<T>
+impl<P> EwkbSerializable for GeometryContainer<P>
 where
-    T: PointT
-        + Debug
-        + PartialEq
-        + Clone
-        + EwkbSerializable
-        + diesel::serialize::ToSql<Geometry, diesel::pg::Pg>,
+    P: PointT,
 {
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
+    fn expected_geometry_variant(geometry_type_hint: u32) -> GeometryType {
+        geometry_type_hint.into()
+    }
+
+    fn geometry_type(&self) -> u32 {
         match self {
-            GeometryContainer::Point(g) => write_point(g, g.get_srid(), out),
-            GeometryContainer::MultiPoint(g) => write_multi_point(g, g.srid, out),
-            GeometryContainer::LineString(g) => write_linestring(g, g.srid, out),
-            GeometryContainer::MultiLineString(g) => write_multiline(g, g.srid, out),
-            GeometryContainer::Polygon(g) => write_polygon(g, g.srid, out),
-            GeometryContainer::MultiPolygon(g) => write_multi_polygon(g, g.srid, out),
-            GeometryContainer::GeometryCollection(g) => write_geometry_collection(g, g.srid, out),
+            GeometryContainer::Point(g) => g.geometry_type(),
+            GeometryContainer::LineString(g) => g.geometry_type(),
+            GeometryContainer::Polygon(g) => g.geometry_type(),
+            GeometryContainer::MultiPoint(g) => g.geometry_type(),
+            GeometryContainer::MultiLineString(g) => g.geometry_type(),
+            GeometryContainer::MultiPolygon(g) => g.geometry_type(),
+            GeometryContainer::GeometryCollection(g) => g.geometry_type(),
+        }
+    }
+
+    fn srid(&self) -> Option<u32> {
+        match self {
+            GeometryContainer::Point(g) => g.srid(),
+            GeometryContainer::LineString(g) => g.srid(),
+            GeometryContainer::Polygon(g) => g.srid(),
+            GeometryContainer::MultiPoint(g) => g.srid(),
+            GeometryContainer::MultiLineString(g) => g.srid(),
+            GeometryContainer::MultiPolygon(g) => g.srid(),
+            GeometryContainer::GeometryCollection(g) => g.srid(),
         }
     }
 }
 
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for GeometryContainer<T>
+impl<P> WriteToSql for GeometryContainer<P>
 where
-    T: PointT
-        + Debug
-        + PartialEq
-        + Clone
-        + EwkbSerializable
-        + diesel::serialize::ToSql<Geometry, diesel::pg::Pg>,
+    P: PointT,
 {
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
+    fn write_to_sql<W>(&self, _include_srid: bool, out: &mut W) -> Result<(), std::io::Error>
+    where
+        W: std::io::Write,
+    {
+        // In this case, we are NOT writing the header, hence we are
+        // overwriting the default method of the `WriteToSql` trait
+        self.write_body(out)
+    }
+
+    fn write_body<Writer>(&self, out: &mut Writer) -> Result<(), std::io::Error>
+    where
+        Writer: std::io::Write,
+    {
         match self {
-            GeometryContainer::Point(g) => write_point(g, g.get_srid(), out),
-            GeometryContainer::MultiPoint(g) => write_multi_point(g, g.srid, out),
-            GeometryContainer::LineString(g) => write_linestring(g, g.srid, out),
-            GeometryContainer::MultiLineString(g) => write_multiline(g, g.srid, out),
-            GeometryContainer::Polygon(g) => write_polygon(g, g.srid, out),
-            GeometryContainer::MultiPolygon(g) => write_multi_polygon(g, g.srid, out),
-            GeometryContainer::GeometryCollection(g) => write_geometry_collection(g, g.srid, out),
+            GeometryContainer::Point(g) => g.write_to_sql(true, out),
+            GeometryContainer::MultiPoint(g) => g.write_to_sql(true, out),
+            GeometryContainer::LineString(g) => g.write_to_sql(true, out),
+            GeometryContainer::MultiLineString(g) => g.write_to_sql(true, out),
+            GeometryContainer::Polygon(g) => g.write_to_sql(true, out),
+            GeometryContainer::MultiPolygon(g) => g.write_to_sql(true, out),
+            GeometryContainer::GeometryCollection(g) => g.write_to_sql(true, out),
         }
     }
 }
 
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for GeometryContainer<T>
+impl<P> ReadFromSql for GeometryContainer<P>
 where
-    T: PointT + Debug + Clone + diesel::deserialize::FromSql<Geometry, diesel::pg::Pg>,
+    P: PointT,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        use byteorder::ReadBytesExt;
-
-        let mut cursor = Cursor::new(bytes.as_bytes());
-        let end = cursor.read_u8()?;
-        let container = if end == BIG_ENDIAN {
-            let g_header = read_ewkb_header::<BigEndian>(&mut cursor)?;
-            match GeometryType::from(g_header.g_type) {
-                GeometryType::Point => {
-                    GeometryContainer::Point(read_point_coordinates::<BigEndian, T>(
-                        &mut cursor,
-                        g_header.g_type,
-                        g_header.srid,
-                    )?)
-                }
-                GeometryType::MultiPoint => {
-                    GeometryContainer::MultiPoint(read_multi_point_body::<BigEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::LineString => {
-                    GeometryContainer::LineString(read_linestring_body::<BigEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::MultiLineString => {
-                    GeometryContainer::MultiLineString(read_multiline_body::<BigEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::Polygon => {
-                    GeometryContainer::Polygon(read_polygon_body::<BigEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::MultiPolygon => {
-                    GeometryContainer::MultiPolygon(read_multi_polygon_body::<BigEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::GeometryCollection => {
-                    GeometryContainer::GeometryCollection(read_geometry_collection_body::<
-                        BigEndian,
-                        T,
-                    >(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
+    fn read_body<Endianness, Reader>(
+        header: crate::ewkb::EwkbHeader,
+        reader: &mut Reader,
+    ) -> Result<Self, std::io::Error>
+    where
+        Reader: std::io::Read,
+        Endianness: byteorder::ByteOrder,
+    {
+        Ok(match GeometryType::from(header.g_type) {
+            GeometryType::Point => {
+                GeometryContainer::Point(P::read_body::<Endianness, Reader>(header, reader)?)
             }
-        } else {
-            let g_header = read_ewkb_header::<LittleEndian>(&mut cursor)?;
-            match GeometryType::from(g_header.g_type) {
-                GeometryType::Point => {
-                    GeometryContainer::Point(read_point_coordinates::<LittleEndian, T>(
-                        &mut cursor,
-                        g_header.g_type,
-                        g_header.srid,
-                    )?)
-                }
-                GeometryType::MultiPoint => {
-                    GeometryContainer::MultiPoint(read_multi_point_body::<LittleEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::LineString => {
-                    GeometryContainer::LineString(read_linestring_body::<LittleEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::MultiLineString => {
-                    GeometryContainer::MultiLineString(read_multiline_body::<LittleEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::Polygon => {
-                    GeometryContainer::Polygon(read_polygon_body::<LittleEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::MultiPolygon => {
-                    GeometryContainer::MultiPolygon(read_multi_polygon_body::<LittleEndian, T>(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
-                GeometryType::GeometryCollection => {
-                    GeometryContainer::GeometryCollection(read_geometry_collection_body::<
-                        LittleEndian,
-                        T,
-                    >(
-                        g_header.g_type,
-                        g_header.srid,
-                        &mut cursor,
-                    )?)
-                }
+            GeometryType::MultiPoint => GeometryContainer::MultiPoint(
+                MultiPoint::<P>::read_body::<Endianness, Reader>(header, reader)?,
+            ),
+            GeometryType::LineString => GeometryContainer::LineString(
+                LineString::<P>::read_body::<Endianness, Reader>(header, reader)?,
+            ),
+            GeometryType::MultiLineString => {
+                GeometryContainer::MultiLineString(MultiLineString::<P>::read_body::<
+                    Endianness,
+                    Reader,
+                >(header, reader)?)
             }
-        };
-        Ok(container)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for GeometryContainer<T>
-where
-    T: PointT + Debug + Clone + diesel::deserialize::FromSql<Geometry, diesel::pg::Pg>,
-{
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
+            GeometryType::Polygon => GeometryContainer::Polygon(Polygon::<P>::read_body::<
+                Endianness,
+                Reader,
+            >(header, reader)?),
+            GeometryType::MultiPolygon => GeometryContainer::MultiPolygon(
+                MultiPolygon::<P>::read_body::<Endianness, Reader>(header, reader)?,
+            ),
+            GeometryType::GeometryCollection => {
+                GeometryContainer::GeometryCollection(GeometryCollection::<P>::read_body::<
+                    Endianness,
+                    Reader,
+                >(header, reader)?)
+            }
+        })
     }
 }

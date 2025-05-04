@@ -12,8 +12,12 @@
 ///}
 /// ```
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "diesel", derive(SqlType, QueryId))]
-#[cfg_attr(feature = "diesel", diesel(postgres_type(name = "geometry")))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::sql_types::SqlType, diesel::query_builder::QueryId)
+)]
+#[cfg_attr(feature = "postgres", diesel(postgres_type(name = "geometry")))]
+#[cfg_attr(feature = "sqlite", diesel(sqlite_type(name = "Binary")))]
 pub struct Geometry;
 
 /// SQL type which may be used in table definition.
@@ -29,8 +33,12 @@ pub struct Geometry;
 ///}
 /// ```
 #[derive(Clone, Copy)]
-#[cfg_attr(feature = "diesel", derive(SqlType, QueryId))]
-#[cfg_attr(feature = "diesel", diesel(postgres_type(name = "geography")))]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::sql_types::SqlType, diesel::query_builder::QueryId)
+)]
+#[cfg_attr(feature = "postgres", diesel(postgres_type(name = "geography")))]
+#[cfg_attr(feature = "sqlite", diesel(sqlite_type(name = "Binary")))]
 pub struct Geography;
 
 #[cfg(feature = "diesel")]

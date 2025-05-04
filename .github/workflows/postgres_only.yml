@@ -1,18 +1,16 @@
-name: Rust
+name: PostgreSQL
 
 on:
   push:
-    branches: [ "master" ]
+    branches:
+      - main
   pull_request:
-    branches: [ "master" ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  # Label of the container job
   runner-job:
-    # You must use a Linux environment when using service containers or container 
     runs-on: ubuntu-latest
     services:
       postgis:
@@ -34,5 +32,3 @@ jobs:
       run: cargo test --features serde_geojson --verbose
     - name: Rust test enabling schemars
       run: cargo test --features schemars --verbose
-    - name: Rust check disabling default features
-      run: cargo check --no-default-features --verbose

@@ -1,14 +1,13 @@
+#![cfg(feature = "postgres")]
 #[macro_use]
 extern crate diesel;
 
-use std::env;
-use std::sync::Once;
-
-// use diesel::query_dsl::filter_dsl::FilterDsl;
 use diesel::pg::PgConnection;
 use diesel::Connection;
 use diesel::{ExpressionMethods, QueryDsl, QueryResult, RunQueryDsl};
 use dotenvy::dotenv;
+use std::env;
+use std::sync::Once;
 
 use postgis_diesel::operators::*;
 use postgis_diesel::types::*;
@@ -266,6 +265,7 @@ fn new_line(points: Vec<(f64, f64)>) -> LineString<Point> {
     //just to check that add_points works
     LineString::new(Option::Some(4326))
         .add_points(l_points)
+        .unwrap()
         .to_owned()
 }
 
@@ -287,16 +287,22 @@ fn new_point_zm(x: f64, y: f64, z: f64, m: f64) -> PointZM {
 
 fn new_geometry_collection() -> GeometryCollection<Point> {
     let mut polygon = Polygon::new(Some(4326));
-    polygon.add_points([
-        new_point(72.0, 64.0),
-        new_point(73.0, 65.0),
-        new_point(71.0, 62.0),
-        new_point(72.0, 64.0),
-    ]);
+    polygon
+        .add_points([
+            new_point(72.0, 64.0),
+            new_point(73.0, 65.0),
+            new_point(71.0, 62.0),
+            new_point(72.0, 64.0),
+        ])
+        .unwrap();
     let mut multiline = MultiLineString::new(Some(4326));
-    multiline.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+    multiline
+        .add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)])
+        .unwrap();
     multiline.add_line();
-    multiline.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+    multiline
+        .add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)])
+        .unwrap();
     let mut multipolygon = MultiPolygon::new(Some(4326));
     multipolygon
         .add_empty_polygon()
@@ -306,13 +312,15 @@ fn new_geometry_collection() -> GeometryCollection<Point> {
             new_point(71.0, 62.0),
             new_point(72.0, 64.0),
         ])
+        .unwrap()
         .add_empty_polygon()
         .add_points([
             new_point(75.0, 64.0),
             new_point(74.0, 65.0),
             new_point(74.0, 62.0),
             new_point(75.0, 64.0),
-        ]);
+        ])
+        .unwrap();
     let mut gc = GeometryCollection::new(Some(4326));
     gc.add_geometry(GeometryContainer::Point(new_point(73.0, 64.0)));
     gc.add_geometry(GeometryContainer::LineString(new_line(vec![
@@ -338,16 +346,22 @@ fn new_geometry_collection() -> GeometryCollection<Point> {
 fn smoke_test() {
     let mut conn = initialize();
     let mut polygon = Polygon::new(Some(4326));
-    polygon.add_points([
-        new_point(72.0, 64.0),
-        new_point(73.0, 65.0),
-        new_point(71.0, 62.0),
-        new_point(72.0, 64.0),
-    ]);
+    polygon
+        .add_points([
+            new_point(72.0, 64.0),
+            new_point(73.0, 65.0),
+            new_point(71.0, 62.0),
+            new_point(72.0, 64.0),
+        ])
+        .unwrap();
     let mut multiline = MultiLineString::new(Some(4326));
-    multiline.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+    multiline
+        .add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)])
+        .unwrap();
     multiline.add_line();
-    multiline.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+    multiline
+        .add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)])
+        .unwrap();
     let mut multipolygon = MultiPolygon::new(Some(4326));
     multipolygon
         .add_empty_polygon()
@@ -357,13 +371,15 @@ fn smoke_test() {
             new_point(71.0, 62.0),
             new_point(72.0, 64.0),
         ])
+        .unwrap()
         .add_empty_polygon()
         .add_points([
             new_point(75.0, 64.0),
             new_point(74.0, 65.0),
             new_point(74.0, 62.0),
             new_point(75.0, 64.0),
-        ]);
+        ])
+        .unwrap();
     let sample = NewGeometrySample {
         name: String::from("smoke_test"),
         point: new_point(72.0, 64.0),
@@ -407,16 +423,22 @@ fn smoke_test() {
 fn geography_smoke_test() {
     let mut conn = initialize();
     let mut polygon = Polygon::new(Some(4326));
-    polygon.add_points([
-        new_point(72.0, 64.0),
-        new_point(73.0, 65.0),
-        new_point(71.0, 62.0),
-        new_point(72.0, 64.0),
-    ]);
+    polygon
+        .add_points([
+            new_point(72.0, 64.0),
+            new_point(73.0, 65.0),
+            new_point(71.0, 62.0),
+            new_point(72.0, 64.0),
+        ])
+        .unwrap();
     let mut multiline = MultiLineString::new(Some(4326));
-    multiline.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+    multiline
+        .add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)])
+        .unwrap();
     multiline.add_line();
-    multiline.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+    multiline
+        .add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)])
+        .unwrap();
     let mut multipolygon = MultiPolygon::new(Some(4326));
     multipolygon
         .add_empty_polygon()
@@ -426,13 +448,15 @@ fn geography_smoke_test() {
             new_point(71.0, 62.0),
             new_point(72.0, 64.0),
         ])
+        .unwrap()
         .add_empty_polygon()
         .add_points([
             new_point(75.0, 64.0),
             new_point(74.0, 65.0),
             new_point(74.0, 62.0),
             new_point(75.0, 64.0),
-        ]);
+        ])
+        .unwrap();
     let sample = NewGeographySample {
         name: String::from("smoke_test"),
         point: new_point(72.0, 64.0),
@@ -481,26 +505,36 @@ fn distance_2d_test() {
     m_polygon
         .add_ring()
         .add_point(Point::new(34.22922934177507, 57.98223781625711, Some(4326)))
+        .unwrap()
         .add_point(Point::new(34.22922934177507, 57.08802327022599, Some(4326)))
+        .unwrap()
         .add_point(Point::new(36.18872506469961, 57.08802327022599, Some(4326)))
+        .unwrap()
         .add_point(Point::new(36.18872506469961, 57.98223781625711, Some(4326)))
-        .add_point(Point::new(34.22922934177507, 57.98223781625711, Some(4326)));
+        .unwrap()
+        .add_point(Point::new(34.22922934177507, 57.98223781625711, Some(4326)))
+        .unwrap();
     let mut v_polygon = Polygon::new(Some(4326));
     v_polygon
         .add_ring()
         .add_point(Point::new(39.732117473214146, 53.3129374517664, Some(4326)))
+        .unwrap()
         .add_point(Point::new(
             39.732117473214146,
             52.658032976474146,
             Some(4326),
         ))
+        .unwrap()
         .add_point(Point::new(
             40.79294127961202,
             52.658032976474146,
             Some(4326),
         ))
+        .unwrap()
         .add_point(Point::new(40.79294127961202, 53.3129374517664, Some(4326)))
-        .add_point(Point::new(39.732117473214146, 53.3129374517664, Some(4326)));
+        .unwrap()
+        .add_point(Point::new(39.732117473214146, 53.3129374517664, Some(4326)))
+        .unwrap();
 
     let m_sample = NewDistanceSample {
         name: String::from("Moscow"),
@@ -541,7 +575,7 @@ fn distance_2d_test() {
 }
 
 #[test]
-#[should_panic(expected = "Geometry Point is not a LineString")]
+#[should_panic(expected = "Expected geometry type `Point`, but got `LineString`")]
 fn unmatched_types_test() {
     let mut conn = initialize();
 
@@ -561,16 +595,22 @@ macro_rules! operator_test {
         fn $t() {
             let mut conn = initialize();
             let mut polygon = Polygon::new(Some(4326));
-            polygon.add_points([
-                new_point(72.0, 64.0),
-                new_point(73.0, 65.0),
-                new_point(71.0, 62.0),
-                new_point(72.0, 64.0),
-            ]);
+            polygon
+                .add_points([
+                    new_point(72.0, 64.0),
+                    new_point(73.0, 65.0),
+                    new_point(71.0, 62.0),
+                    new_point(72.0, 64.0),
+                ])
+                .unwrap();
             let mut multiline = MultiLineString::new(Some(4326));
-            multiline.add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)]);
+            multiline
+                .add_points([new_point(72.0, 64.0), new_point(73.0, 65.0)])
+                .unwrap();
             multiline.add_line();
-            multiline.add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)]);
+            multiline
+                .add_points([new_point(71.0, 62.0), new_point(72.0, 64.0)])
+                .unwrap();
             let mut multipolygon = MultiPolygon::new(Some(4326));
             multipolygon
                 .add_empty_polygon()
@@ -580,13 +620,15 @@ macro_rules! operator_test {
                     new_point(71.0, 62.0),
                     new_point(72.0, 64.0),
                 ])
+                .unwrap()
                 .add_empty_polygon()
                 .add_points([
                     new_point(75.0, 64.0),
                     new_point(74.0, 65.0),
                     new_point(74.0, 62.0),
                     new_point(75.0, 64.0),
-                ]);
+                ])
+                .unwrap();
             let sample = NewGeometrySample {
                 name: String::from(stringify!($t)),
                 point: new_point(71.0, 63.0),

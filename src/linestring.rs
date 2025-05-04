@@ -1,31 +1,32 @@
-use std::fmt::Debug;
-use std::io::Cursor;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-
-#[cfg(feature = "diesel")]
-use crate::ewkb::{read_ewkb_header, write_ewkb_header};
 use crate::points::Dimension;
-#[cfg(feature = "diesel")]
-use crate::points::{read_point_coordinates, write_point_coordinates};
-use crate::sql_types::*;
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 use crate::{
-    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType},
     types::{LineString, PointT},
 };
 
-impl<T> EwkbSerializable for LineString<T>
+impl<P> EwkbSerializable for LineString<P>
 where
-    T: PointT,
+    P: PointT,
 {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::LineString
+    }
+
     fn geometry_type(&self) -> u32 {
         GeometryType::LineString as u32 | self.dimension()
     }
+
+    fn srid(&self) -> Option<u32> {
+        self.srid
+    }
 }
 
-impl<T> LineString<T>
+impl<P> LineString<P>
 where
-    T: PointT,
+    P: PointT,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self::with_capacity(srid, 0)
@@ -38,20 +39,42 @@ where
         }
     }
 
-    pub fn add_point(&mut self, point: T) -> &mut Self {
+    /// Adds a point to the linestring.
+    ///
+    /// # Arguments
+    ///
+    /// * `point` - The point to add.
+    ///
+    /// # Errors
+    ///
+    /// * `IncompatibleSpatialReferenceSystemIdentifier` - If the point's SRID does not match the linestring's SRID.
+    ///
+    pub fn add_point(&mut self, point: P) -> Result<&mut Self, crate::errors::Error> {
+        if point.srid() != self.srid {
+            return Err(
+                crate::errors::Error::IncompatibleSpatialReferenceSystemIdentifier {
+                    expected: self.srid,
+                    actual: point.srid(),
+                },
+            );
+        }
+
         self.points.push(point);
-        self
+        Ok(self)
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    pub fn add_points(
+        &mut self,
+        points: impl IntoIterator<Item = P>,
+    ) -> Result<&mut Self, crate::errors::Error> {
         for point in points {
-            self.points.push(point);
+            self.add_point(point)?;
         }
-        self
+        Ok(self)
     }
 
     pub fn dimension(&self) -> u32 {
-        let mut dimension = Dimension::None as u32;
+        let mut dimension = Dimension::NONE;
         if let Some(point) = self.points.first() {
             dimension |= point.dimension();
         }
@@ -59,100 +82,41 @@ where
     }
 }
 
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for LineString<T>
+impl<P> ReadFromSql for LineString<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes.as_bytes());
-        let end = r.read_u8()?;
-        if end == BIG_ENDIAN {
-            read_linestring::<BigEndian, T>(&mut r)
-        } else {
-            read_linestring::<LittleEndian, T>(&mut r)
+    fn read_body<Endianness, Reader>(
+        header: crate::ewkb::EwkbHeader,
+        reader: &mut Reader,
+    ) -> Result<Self, std::io::Error>
+    where
+        Reader: std::io::Read,
+        Endianness: byteorder::ByteOrder,
+    {
+        let len = reader.read_u32::<Endianness>()?;
+        let mut ls = LineString::with_capacity(header.srid, len as usize);
+        for _i in 0..len {
+            ls.add_point(P::read_body::<Endianness, Reader>(header, reader)?)
+                .unwrap();
         }
+        Ok(ls)
     }
 }
 
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for LineString<T>
+impl<P> WriteToSql for LineString<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
+    fn write_body<Writer>(&self, out: &mut Writer) -> Result<(), std::io::Error>
+    where
+        Writer: std::io::Write,
+    {
+        // size and points
+        out.write_u32::<LittleEndian>(self.points.len() as u32)?;
+        for point in self.points.iter() {
+            point.write_body::<Writer>(out)?;
+        }
+        Ok(())
     }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for LineString<T>
-where
-    T: PointT + Debug + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_linestring(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for LineString<T>
-where
-    T: PointT + Debug + EwkbSerializable,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_linestring(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_linestring<T>(
-    linestring: &LineString<T>,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable,
-{
-    write_ewkb_header(linestring, srid, out)?;
-    // size and points
-    out.write_u32::<LittleEndian>(linestring.points.len() as u32)?;
-    for point in linestring.points.iter() {
-        write_point_coordinates(point, out)?;
-    }
-    Ok(diesel::serialize::IsNull::No)
-}
-
-#[cfg(feature = "diesel")]
-fn read_linestring<T, P>(cursor: &mut Cursor<&[u8]>) -> diesel::deserialize::Result<LineString<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::LineString)?;
-    read_linestring_body::<T, P>(g_header.g_type, g_header.srid, cursor)
-}
-
-#[cfg(feature = "diesel")]
-pub fn read_linestring_body<T, P>(
-    g_type: u32,
-    srid: Option<u32>,
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<LineString<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let len = cursor.read_u32::<T>()?;
-    let mut ls = LineString::with_capacity(srid, len as usize);
-    for _i in 0..len {
-        ls.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
-    }
-    Ok(ls)
 }

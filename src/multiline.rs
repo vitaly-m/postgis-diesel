@@ -1,25 +1,15 @@
-use std::fmt::Debug;
-use std::io::Cursor;
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
-
-#[cfg(feature = "diesel")]
+use crate::write_to_read_from_sql::{ReadFromSql, WriteToSql};
 use crate::{
-    ewkb::{read_ewkb_header, write_ewkb_header},
-    linestring::write_linestring,
-    points::read_point_coordinates,
-};
-use crate::{
-    ewkb::{EwkbSerializable, GeometryType, BIG_ENDIAN},
+    ewkb::{EwkbSerializable, GeometryType},
     points::Dimension,
     types::{LineString, MultiLineString, PointT},
 };
 
-use crate::sql_types::*;
-
-impl<T> MultiLineString<T>
+impl<P> MultiLineString<P>
 where
-    T: PointT + Clone,
+    P: PointT,
 {
     pub fn new(srid: Option<u32>) -> Self {
         Self::with_capacity(srid, 0)
@@ -41,27 +31,50 @@ where
         self
     }
 
-    pub fn add_point(&mut self, point: T) -> &mut Self {
+    /// Adds a point to the last line of the multiline.
+    ///
+    /// # Arguments
+    ///
+    /// * `point` - The point to add.
+    ///
+    /// # Errors
+    ///
+    /// * `IncompatibleSpatialReferenceSystemIdentifier` - If the point's SRID does not match the multiline's SRID.
+    ///
+    pub fn add_point(&mut self, point: P) -> Result<&mut Self, crate::errors::Error> {
         if self.lines.last().is_none() {
             self.add_line();
         }
-        self.lines.last_mut().unwrap().add_point(point);
-        self
+        self.lines.last_mut().unwrap().add_point(point)?;
+        Ok(self)
     }
 
-    pub fn add_points(&mut self, points: impl IntoIterator<Item = T>) -> &mut Self {
+    /// Adds multiple points to the last line of the multiline.
+    ///
+    /// # Arguments
+    ///
+    /// * `points` - The points to add.
+    ///
+    /// # Errors
+    ///
+    /// * `IncompatibleSpatialReferenceSystemIdentifier` - If the point's SRID does not match the multiline's SRID.
+    ///
+    pub fn add_points(
+        &mut self,
+        points: impl IntoIterator<Item = P>,
+    ) -> Result<&mut Self, crate::errors::Error> {
         if self.lines.last().is_none() {
             self.add_line();
         }
         let last = self.lines.last_mut().unwrap();
         for point in points {
-            last.points.push(point);
+            last.add_point(point)?;
         }
-        self
+        Ok(self)
     }
 
     pub fn dimension(&self) -> u32 {
-        let mut dimension = Dimension::None as u32;
+        let mut dimension = Dimension::NONE;
         if let Some(line) = self.lines.first() {
             dimension |= line.dimension();
         }
@@ -69,10 +82,14 @@ where
     }
 }
 
-impl<T> EwkbSerializable for MultiLineString<T>
+impl<P> EwkbSerializable for MultiLineString<P>
 where
-    T: PointT,
+    P: PointT,
 {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::MultiLineString
+    }
+
     fn geometry_type(&self) -> u32 {
         let mut g_type = GeometryType::MultiLineString as u32;
         if let Some(line) = self.lines.first() {
@@ -80,111 +97,58 @@ where
         }
         g_type
     }
-}
 
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geometry, diesel::pg::Pg> for MultiLineString<T>
-where
-    T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
-{
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_multiline(self, self.srid, out)
+    fn srid(&self) -> Option<u32> {
+        self.srid
     }
 }
 
-#[cfg(feature = "diesel")]
-impl<T> diesel::serialize::ToSql<Geography, diesel::pg::Pg> for MultiLineString<T>
+impl<P> WriteToSql for MultiLineString<P>
 where
-    T: PointT + Debug + PartialEq + EwkbSerializable + Clone,
+    P: PointT,
 {
-    fn to_sql(
-        &self,
-        out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-    ) -> diesel::serialize::Result {
-        write_multiline(self, self.srid, out)
-    }
-}
-
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geometry, diesel::pg::Pg> for MultiLineString<T>
-where
-    T: PointT + Debug + Clone,
-{
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        let mut r = Cursor::new(bytes.as_bytes());
-        let end = r.read_u8()?;
-        if end == BIG_ENDIAN {
-            read_multiline::<BigEndian, T>(&mut r)
-        } else {
-            read_multiline::<LittleEndian, T>(&mut r)
+    fn write_body<Writer>(&self, out: &mut Writer) -> Result<(), std::io::Error>
+    where
+        Writer: std::io::Write,
+    {
+        // number of lines
+        out.write_u32::<LittleEndian>(self.lines.len() as u32)?;
+        for line in self.lines.iter() {
+            line.write_to_sql(false, out)?;
         }
+        Ok(())
     }
 }
 
-#[cfg(feature = "diesel")]
-impl<T> diesel::deserialize::FromSql<Geography, diesel::pg::Pg> for MultiLineString<T>
+impl<P> ReadFromSql for MultiLineString<P>
 where
-    T: PointT + Debug + Clone,
+    P: PointT,
 {
-    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
-        diesel::deserialize::FromSql::<Geometry, diesel::pg::Pg>::from_sql(bytes)
-    }
-}
-
-#[cfg(feature = "diesel")]
-pub fn write_multiline<T>(
-    multiline: &MultiLineString<T>,
-    srid: Option<u32>,
-    out: &mut diesel::serialize::Output<diesel::pg::Pg>,
-) -> diesel::serialize::Result
-where
-    T: PointT + EwkbSerializable + Clone,
-{
-    write_ewkb_header(multiline, srid, out)?;
-    // number of lines
-    out.write_u32::<LittleEndian>(multiline.lines.len() as u32)?;
-    for line in multiline.lines.iter() {
-        write_linestring(line, None, out)?;
-    }
-    Ok(diesel::serialize::IsNull::No)
-}
-
-#[cfg(feature = "diesel")]
-fn read_multiline<T, P>(
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<MultiLineString<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let g_header = read_ewkb_header::<T>(cursor)?.expect(GeometryType::MultiLineString)?;
-    read_multiline_body::<T, P>(g_header.g_type, g_header.srid, cursor)
-}
-
-#[cfg(feature = "diesel")]
-pub fn read_multiline_body<T, P>(
-    g_type: u32,
-    srid: Option<u32>,
-    cursor: &mut Cursor<&[u8]>,
-) -> diesel::deserialize::Result<MultiLineString<P>>
-where
-    T: byteorder::ByteOrder,
-    P: PointT + Clone,
-{
-    let lines_n = cursor.read_u32::<T>()?;
-    let mut multiline = MultiLineString::with_capacity(srid, lines_n as usize);
-    for _i in 0..lines_n {
-        // skip 1 byte for byte order and 4 bytes for point type
-        cursor.read_u8()?;
-        cursor.read_u32::<T>()?;
-        let points_n = cursor.read_u32::<T>()?;
-        multiline.add_line_with_cap(points_n as usize);
-        for _p in 0..points_n {
-            multiline.add_point(read_point_coordinates::<T, P>(cursor, g_type, srid)?);
+    fn read_body<Endianness, Reader>(
+        header: crate::ewkb::EwkbHeader,
+        reader: &mut Reader,
+    ) -> Result<Self, std::io::Error>
+    where
+        Reader: std::io::Read,
+        Endianness: byteorder::ByteOrder,
+    {
+        let lines_n = reader.read_u32::<Endianness>().unwrap();
+        println!("read lines_n: {:?}", lines_n);
+        let mut multiline = MultiLineString::with_capacity(header.srid, lines_n as usize);
+        for _i in 0..lines_n {
+            println!("read line");
+            // skip 1 byte for byte order and 4 bytes for point type
+            reader.read_u8().unwrap();
+            reader.read_u32::<Endianness>().unwrap();
+            let points_n = reader.read_u32::<Endianness>().unwrap();
+            println!("read points_n: {:?}", points_n);
+            multiline.add_line_with_cap(points_n as usize);
+            for _p in 0..points_n {
+                let point = P::read_body::<Endianness, Reader>(header, reader)?;
+                println!("read point {:?}", point);
+                multiline.add_point(point).unwrap();
+            }
         }
+        Ok(multiline)
     }
-    Ok(multiline)
 }

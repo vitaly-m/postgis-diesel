@@ -4,3 +4,6 @@ Cargo.lock
 /.vscode
 *.iml
 /prof
+test.sqlite
+integration_test.sqlite
+test_*.sqlite

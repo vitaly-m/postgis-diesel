@@ -1,3 +1,4 @@
+#![cfg(feature = "postgres")]
 #[macro_use]
 extern crate diesel;
 
@@ -80,7 +81,9 @@ fn intersect_3d_test() {
             PointZ::new(0.0, 0.0, 2.0, Some(4326)),
             LineString::new(Some(4326))
                 .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
+                .unwrap()
                 .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -91,7 +94,9 @@ fn intersect_3d_test() {
             PointZ::new(0.0, 0.0, 1.0, Some(4326)),
             LineString::new(Some(4326))
                 .add_point(PointZ::new(0.0, 0.0, 1.0, Some(4326)))
+                .unwrap()
                 .add_point(PointZ::new(0.0, 2.0, 3.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -109,10 +114,15 @@ fn contains_test() {
         .filter(st_contains(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(3.0, 1.0, Some(4326)),
         ))
@@ -123,10 +133,15 @@ fn contains_test() {
         .filter(st_contains(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(1.0, 1.0, Some(4326)),
         ))
@@ -145,10 +160,15 @@ fn contains_properly_test() {
         .filter(st_contains_properly(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(3.0, 1.0, Some(4326)),
         ))
@@ -159,10 +179,15 @@ fn contains_properly_test() {
         .filter(st_contains_properly(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(1.0, 1.0, Some(4326)),
         ))
@@ -182,10 +207,15 @@ fn covered_by_geometry_test() {
             Point::new(3.0, 1.0, Some(4326)),
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -196,10 +226,15 @@ fn covered_by_geometry_test() {
             Point::new(1.0, 1.0, Some(4326)),
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -218,10 +253,15 @@ fn covered_by_geography_test() {
             Point::new(3.0, 1.0, Some(4326)),
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -232,10 +272,15 @@ fn covered_by_geography_test() {
             Point::new(1.0, 1.0, Some(4326)),
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -253,10 +298,15 @@ fn covers_geometry_test() {
         .filter(st_covers::<Geometry, Polygon<Point>, Point>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(3.0, 1.0, Some(4326)),
         ))
@@ -267,10 +317,15 @@ fn covers_geometry_test() {
         .filter(st_covers::<Geometry, Polygon<Point>, Point>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(1.0, 1.0, Some(4326)),
         ))
@@ -289,10 +344,15 @@ fn coveres_geography_test() {
         .filter(st_covers::<Geography, Polygon<Point>, Point>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(3.0, 1.0, Some(4326)),
         ))
@@ -303,10 +363,15 @@ fn coveres_geography_test() {
         .filter(st_covers::<Geography, Polygon<Point>, Point>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(1.0, 1.0, Some(4326)),
         ))
@@ -325,11 +390,15 @@ fn crosses_test() {
         .filter(st_crosses::<LineString<Point>, LineString<Point>>(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(1.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(1.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -339,11 +408,15 @@ fn crosses_test() {
         .filter(st_crosses::<LineString<Point>, LineString<Point>>(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(-1.0, 1.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(1.0, 1.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -362,7 +435,9 @@ fn disjoint_test() {
             Point::new(0.0, 0.0, Some(4326)),
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -373,7 +448,9 @@ fn disjoint_test() {
             Point::new(0.0, 0.0, Some(4326)),
             LineString::new(Some(4326))
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -391,11 +468,15 @@ fn equals_test() {
         .filter(st_equals::<LineString<Point>, LineString<Point>>(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(1.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(1.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -405,12 +486,17 @@ fn equals_test() {
         .filter(st_equals::<LineString<Point>, LineString<Point>>(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 1.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -429,7 +515,9 @@ fn intersects_geometry_test() {
             Point::new(0.0, 0.0, Some(4326)),
             LineString::new(Some(4326))
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -440,7 +528,9 @@ fn intersects_geometry_test() {
             Point::new(0.0, 0.0, Some(4326)),
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -459,7 +549,9 @@ fn intersects_geography_test() {
             Point::new(0.0, 0.0, Some(4326)),
             LineString::new(Some(4326))
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -470,7 +562,9 @@ fn intersects_geography_test() {
             Point::new(0.0, 0.0, Some(4326)),
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -493,14 +587,21 @@ fn line_crossing_direction_test() {
                 >(
                     LineString::new(Some(4326))
                         .add_point(Point::new(25.0, 169.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(89.0, 114.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(40.0, 70.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(86.0, 43.0, Some(4326)))
+                        .unwrap()
                         .to_owned(),
                     LineString::new(Some(4326))
                         .add_point(Point::new(20.0, 140.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(71.0, 74.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(161.0, 53.0, Some(4326)))
+                        .unwrap()
                         .to_owned(),
                 )),
         )
@@ -516,14 +617,21 @@ fn line_crossing_direction_test() {
                 >(
                     LineString::new(Some(4326))
                         .add_point(Point::new(25.0, 169.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(89.0, 114.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(40.0, 70.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(86.0, 43.0, Some(4326)))
+                        .unwrap()
                         .to_owned(),
                     LineString::new(Some(4326))
                         .add_point(Point::new(20.0, 140.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(71.0, 74.0, Some(4326)))
+                        .unwrap()
                         .add_point(Point::new(161.0, 53.0, Some(4326)))
+                        .unwrap()
                         .to_owned(),
                 )),
         )
@@ -542,12 +650,17 @@ fn ordering_equals_test() {
         .filter(st_ordering_equals::<LineString<Point>, LineString<Point>>(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 1.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -557,11 +670,15 @@ fn ordering_equals_test() {
         .filter(st_ordering_equals::<LineString<Point>, LineString<Point>>(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -579,13 +696,19 @@ fn overlaps_test() {
         .filter(st_overlaps::<Polygon<Point>, LineString<Point>>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(40.0, 170.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(90.0, 30.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(180.0, 100.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(40.0, 170.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(10.0, 10.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(190.0, 190.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -595,16 +718,24 @@ fn overlaps_test() {
         .filter(st_overlaps::<Polygon<Point>, Polygon<Point>>(
             Polygon::new(Some(4326))
                 .add_point(Point::new(40.0, 170.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(90.0, 30.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(180.0, 100.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(40.0, 170.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             //110 180, 20 60, 130 90, 110 180
             Polygon::new(Some(4326))
                 .add_point(Point::new(110.0, 180.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(20.0, 60.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(130.0, 90.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(110.0, 180.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -622,11 +753,15 @@ fn relate_check_test() {
         .filter(st_relate_check(
             LineString::new(Some(4326))
                 .add_point(Point::new(1.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(3.0, 4.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(5.0, 6.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(7.0, 8.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             "FF1FF0101",
         ))
@@ -637,11 +772,15 @@ fn relate_check_test() {
         .filter(st_relate_check(
             LineString::new(Some(4326))
                 .add_point(Point::new(1.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(3.0, 4.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             LineString::new(Some(4326))
                 .add_point(Point::new(5.0, 6.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(7.0, 8.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             "FF1FF0102",
         ))
@@ -661,11 +800,15 @@ fn relate_test() {
             "FF1FF0101".into_sql::<Text>().eq(st_relate(
                 LineString::new(Some(4326))
                     .add_point(Point::new(1.0, 2.0, Some(4326)))
+                    .unwrap()
                     .add_point(Point::new(3.0, 4.0, Some(4326)))
+                    .unwrap()
                     .to_owned(),
                 LineString::new(Some(4326))
                     .add_point(Point::new(5.0, 6.0, Some(4326)))
+                    .unwrap()
                     .add_point(Point::new(7.0, 8.0, Some(4326)))
+                    .unwrap()
                     .to_owned(),
             )),
         )
@@ -677,11 +820,15 @@ fn relate_test() {
             "FF1FF0102".into_sql::<Text>().eq(st_relate(
                 LineString::new(Some(4326))
                     .add_point(Point::new(1.0, 2.0, Some(4326)))
+                    .unwrap()
                     .add_point(Point::new(3.0, 4.0, Some(4326)))
+                    .unwrap()
                     .to_owned(),
                 LineString::new(Some(4326))
                     .add_point(Point::new(5.0, 6.0, Some(4326)))
+                    .unwrap()
                     .add_point(Point::new(7.0, 8.0, Some(4326)))
+                    .unwrap()
                     .to_owned(),
             )),
         )
@@ -713,8 +860,11 @@ fn touches_test() {
         .filter(st_touches(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(1.0, 1.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(1.0, 1.0, Some(4326)),
         ))
@@ -725,8 +875,11 @@ fn touches_test() {
         .filter(st_touches(
             LineString::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(1.0, 1.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
             Point::new(0.0, 2.0, Some(4326)),
         ))
@@ -746,10 +899,15 @@ fn within_test() {
             Point::new(3.0, 1.0, Some(4326)),
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)
@@ -760,10 +918,15 @@ fn within_test() {
             Point::new(1.0, 1.0, Some(4326)),
             Polygon::new(Some(4326))
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 2.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(2.0, 0.0, Some(4326)))
+                .unwrap()
                 .add_point(Point::new(0.0, 0.0, Some(4326)))
+                .unwrap()
                 .to_owned(),
         ))
         .get_results(&mut conn)

@@ -1,0 +1,27 @@
+name: SQLite
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  runner-job:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: cargo build --verbose
+    - name: Run tests
+      run: cargo test --no-default-features --features sqlite --verbose
+    - name: Rust test enabling serde
+      run: cargo test --no-default-features --features "sqlite serde" --verbose
+    - name: Rust test enabling serde_geojson
+      run: cargo test --no-default-features --features "sqlite serde_geojson" --verbose
+    - name: Rust test enabling schemars
+      run: cargo test --no-default-features --features "sqlite schemars" --verbose
