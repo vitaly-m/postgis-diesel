@@ -212,7 +212,7 @@ pub struct MultiPoint<T> {
 ///     linestring: LineString<Point>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     feature = "diesel",
     derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
@@ -243,7 +243,7 @@ pub struct LineString<T> {
 ///     multilinestring: MultiLineString<LineString<Point>>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     feature = "diesel",
     derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
@@ -274,7 +274,7 @@ pub struct MultiLineString<T> {
 ///     polygon: Polygon<Point>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     feature = "diesel",
     derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
@@ -305,7 +305,7 @@ pub struct Polygon<T> {
 ///     multipolygon: MultiPolygon<Polygon<Point>>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     feature = "diesel",
     derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
@@ -329,7 +329,7 @@ pub struct MultiPolygon<T> {
 /// Represents any type that can appear in a geometry or geography column.
 ///
 /// T is the Point type (Point or PointZ or PointM)
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     feature = "diesel",
     derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
@@ -371,7 +371,7 @@ pub enum GeometryContainer<T> {
 ///     geometrycollection: GeometryCollection<GeometryContainer<Point>>,
 /// }
 /// ```
-#[derive(Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, PartialEq)]
 #[cfg_attr(
     feature = "diesel",
     derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
@@ -393,7 +393,7 @@ pub struct GeometryCollection<T> {
 }
 
 #[cfg(feature = "serde_geojson")]
-#[derive(Clone, Debug, PartialEq, PartialOrd, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
 #[serde(
     tag = "type",
     bound(
@@ -407,7 +407,7 @@ pub struct Feature<T, P: serde::Serialize> {
 }
 
 #[cfg(feature = "serde_geojson")]
-#[derive(Clone, Debug, PartialEq, PartialOrd, serde::Deserialize)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
 #[serde(
     tag = "type",
     bound(
