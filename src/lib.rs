@@ -1,3 +1,5 @@
+#![doc = include_str!("../README.md")]
+
 #[cfg(feature = "diesel")]
 #[macro_use]
 extern crate diesel;
