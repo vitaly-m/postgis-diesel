@@ -1,3 +1,4 @@
+#![cfg(feature = "diesel")]
 use diesel::expression::AsExpression;
 use diesel::sql_types::SqlType;
 use diesel::Expression;

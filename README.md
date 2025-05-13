@@ -33,11 +33,9 @@ CREATE TABLE geometry_samples
 Then Rust code (with either backends) may look like this:
 
 ```rust
-#[macro_use]
-extern crate diesel;
-
 use postgis_diesel::operators::*;
 use postgis_diesel::types::*;
+use diesel::prelude::*;
 
 #[derive(Insertable)]
 #[diesel(table_name = geometry_samples)]
