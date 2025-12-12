@@ -152,6 +152,26 @@ pub struct PointZM {
     pub srid: Option<u32>,
 }
 
+/// Represents any point type.
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+#[cfg_attr(
+    feature = "diesel",
+    derive(diesel::deserialize::FromSqlRow, diesel::expression::AsExpression)
+)]
+#[cfg_attr(feature = "diesel", diesel(sql_type = crate:: sql_types::Geometry))]
+#[cfg_attr(feature = "diesel", diesel(sql_type = crate::sql_types::Geography))]
+#[cfg_attr(
+    all(feature = "serde", not(feature = "serde_geojson")),
+    derive(serde::Serialize, serde::Deserialize)
+)]
+#[cfg_attr(feature = "schemars", derive(JsonSchema))]
+pub enum AnyPoint {
+    Point(Point),
+    PointZ(PointZ),
+    PointM(PointM),
+    PointZM(PointZM),
+}
+
 /// Allows uniform access across the four point types
 pub trait PointT: ReadFromSql + WriteToSql + Copy + core::fmt::Debug {
     fn new_point(
