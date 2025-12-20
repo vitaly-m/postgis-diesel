@@ -71,6 +71,29 @@ impl EwkbSerializable for PointZM {
     }
 }
 
+impl EwkbSerializable for AnyPoint {
+    fn expected_geometry_variant(_: u32) -> GeometryType {
+        GeometryType::Point
+    }
+
+    fn geometry_type(&self) -> u32 {
+        match self {
+            AnyPoint::Point(point) => point.geometry_type(),
+            AnyPoint::PointZ(point_z) => point_z.geometry_type(),
+            AnyPoint::PointM(point_m) => point_m.geometry_type(),
+            AnyPoint::PointZM(point_zm) => point_zm.geometry_type(),
+        }
+    }
+    fn srid(&self) -> Option<u32> {
+        match self {
+            AnyPoint::Point(point) => point.srid(),
+            AnyPoint::PointZ(point_z) => point_z.srid(),
+            AnyPoint::PointM(point_m) => point_m.srid(),
+            AnyPoint::PointZM(point_zm) => point_zm.srid(),
+        }
+    }
+}
+
 impl Point {
     pub fn new(x: f64, y: f64, srid: Option<u32>) -> Self {
         Point::new_point(x, y, srid, None, None).unwrap()
@@ -291,6 +314,77 @@ impl PointT for PointZM {
     }
 }
 
+impl PointT for AnyPoint {
+    fn new_point(
+        x: f64,
+        y: f64,
+        srid: Option<u32>,
+        z: Option<f64>,
+        m: Option<f64>,
+    ) -> Result<Self, PointConstructorError> {
+        match (z, m) {
+            (None, None) => Ok(AnyPoint::Point(Point::new_point(x, y, srid, z, m)?)),
+            (Some(_), None) => Ok(AnyPoint::PointZ(PointZ::new_point(x, y, srid, z, m)?)),
+            (None, Some(_)) => Ok(AnyPoint::PointM(PointM::new_point(x, y, srid, z, m)?)),
+            (Some(_), Some(_)) => Ok(AnyPoint::PointZM(PointZM::new_point(x, y, srid, z, m)?)),
+        }
+    }
+
+    fn get_x(&self) -> f64 {
+        match self {
+            AnyPoint::Point(p) => p.get_x(),
+            AnyPoint::PointZ(p) => p.get_x(),
+            AnyPoint::PointM(p) => p.get_x(),
+            AnyPoint::PointZM(p) => p.get_x(),
+        }
+    }
+
+    fn get_y(&self) -> f64 {
+        match self {
+            AnyPoint::Point(p) => p.get_y(),
+            AnyPoint::PointZ(p) => p.get_y(),
+            AnyPoint::PointM(p) => p.get_y(),
+            AnyPoint::PointZM(p) => p.get_y(),
+        }
+    }
+
+    fn get_srid(&self) -> Option<u32> {
+        match self {
+            AnyPoint::Point(p) => p.get_srid(),
+            AnyPoint::PointZ(p) => p.get_srid(),
+            AnyPoint::PointM(p) => p.get_srid(),
+            AnyPoint::PointZM(p) => p.get_srid(),
+        }
+    }
+
+    fn get_z(&self) -> Option<f64> {
+        match self {
+            AnyPoint::Point(p) => p.get_z(),
+            AnyPoint::PointZ(p) => p.get_z(),
+            AnyPoint::PointM(p) => p.get_z(),
+            AnyPoint::PointZM(p) => p.get_z(),
+        }
+    }
+
+    fn get_m(&self) -> Option<f64> {
+        match self {
+            AnyPoint::Point(p) => p.get_m(),
+            AnyPoint::PointZ(p) => p.get_m(),
+            AnyPoint::PointM(p) => p.get_m(),
+            AnyPoint::PointZM(p) => p.get_m(),
+        }
+    }
+
+    fn dimension(&self) -> u32 {
+        match self {
+            AnyPoint::Point(p) => p.dimension(),
+            AnyPoint::PointZ(p) => p.dimension(),
+            AnyPoint::PointM(p) => p.dimension(),
+            AnyPoint::PointZM(p) => p.dimension(),
+        }
+    }
+}
+
 fn write_body<Writer, P>(point: &P, writer: &mut Writer) -> Result<(), std::io::Error>
 where
     Writer: std::io::Write,
@@ -352,7 +446,7 @@ macro_rules! impl_point_read_write {
     };
 }
 
-impl_point_read_write!(Point, PointZ, PointM, PointZM);
+impl_point_read_write!(Point, PointZ, PointM, PointZM, AnyPoint);
 
 #[cfg(test)]
 mod tests {
