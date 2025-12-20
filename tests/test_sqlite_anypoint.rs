@@ -1,5 +1,4 @@
 #![cfg(feature = "sqlite")]
-#![recursion_limit = "1024"]
 //! Submodule to test the use the `AnyPoint` type with SQLite backend.
 
 #[macro_use]
@@ -9,7 +8,7 @@ use std::sync::Once;
 
 use diesel::SqliteConnection;
 use diesel::Connection;
-use diesel::RunQueryDsl;
+use diesel::{QueryDsl, RunQueryDsl, TextExpressionMethods};
 
 use postgis_diesel::types::{AnyPoint, PointT};
 
@@ -24,7 +23,6 @@ struct NewGeometrySample {
 
 #[derive(Queryable)]
 #[diesel(table_name = geom_accessor_functions)]
-#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 #[allow(dead_code)]
 struct GeometrySample {
     id: i32,
@@ -104,9 +102,10 @@ fn establish_sqlite_connection() -> SqliteConnection {
 }
 
 #[test]
-fn anypoint_test_sqlite() {
+fn point_test_sqlite() {
     let mut conn = establish_sqlite_connection();
     let found_samples: Vec<GeometrySample> = geom_accessor_functions::table
+        .filter(geom_accessor_functions::name.like("point_%"))
         .get_results(&mut conn)
         .unwrap();
     assert_eq!(4, found_samples.len());

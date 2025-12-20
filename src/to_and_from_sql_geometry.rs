@@ -133,5 +133,6 @@ impl_point_to_sql_geometry!(
     crate::types::Point,
     crate::types::PointZ,
     crate::types::PointM,
-    crate::types::PointZM
+    crate::types::PointZM,
+    crate::types::AnyPoint
 );
