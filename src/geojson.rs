@@ -757,13 +757,13 @@ mod tests {
     fn test_non_wgs84_serde() {
         let point = Point::new(72.0, 64.0, Some(4324));
         let point_json = serde_json::to_string(&point);
-        assert_eq!(true, point_json.is_err());
+        assert!(point_json.is_err());
     }
 
     #[test]
     fn test_no_srid_serde() {
         let point = Point::new(72.0, 64.0, None);
         let point_json = serde_json::to_string(&point);
-        assert_eq!(true, point_json.is_ok());
+        assert!(point_json.is_ok());
     }
 }

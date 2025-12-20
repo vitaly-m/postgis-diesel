@@ -178,7 +178,8 @@ fn establish_connection() -> PgConnection {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not set");
 
-    PgConnection::establish(&database_url).expect(&format!("Error connecting to {}", database_url))
+    PgConnection::establish(&database_url)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
 fn initialize() -> PgConnection {
@@ -387,13 +388,13 @@ fn smoke_test() {
         point_m: new_point_m(72.0, 64.0, 11.0),
         point_zm: new_point_zm(72.0, 64.0, 10.0, 11.0),
         linestring: new_line(vec![(72.0, 64.0), (73.0, 64.0)]),
-        polygon: polygon,
+        polygon,
         multipoint: MultiPoint {
             points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
             srid: Some(4326),
         },
-        multiline: multiline,
-        multipolygon: multipolygon,
+        multiline,
+        multipolygon,
         geometrycollection: new_geometry_collection(),
         geometrycontainer: GeometryContainer::Point(new_point(72.0, 64.0)),
     };
@@ -469,8 +470,8 @@ fn geography_smoke_test() {
             points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
             srid: Some(4326),
         },
-        multiline: multiline,
-        multipolygon: multipolygon,
+        multiline,
+        multipolygon,
         geometrycollection: new_geometry_collection(),
         geometrycontainer: GeometryContainer::Polygon(polygon),
     };
@@ -550,7 +551,7 @@ fn distance_2d_test() {
     let r = diesel::insert_into(distance_samples)
         .values(records)
         .execute(&mut conn);
-    assert_eq!(true, r.is_ok(), "can't insert data");
+    assert!(r.is_ok(), "can't insert data");
 
     use self::distance_samples::dsl::*;
 
@@ -636,13 +637,13 @@ macro_rules! operator_test {
                 point_m: new_point_m(72.0, 64.0, 11.0),
                 point_zm: new_point_zm(72.0, 64.0, 10.0, 11.0),
                 linestring: new_line(vec![(72.0, 64.0), (73.0, 64.0)]),
-                polygon: polygon,
+                polygon,
                 multipoint: MultiPoint {
                     points: vec![new_point(72.0, 64.0), new_point(73.0, 64.0)],
                     srid: Some(4326),
                 },
-                multiline: multiline,
-                multipolygon: multipolygon,
+                multiline,
+                multipolygon,
                 geometrycollection: new_geometry_collection(),
                 geometrycontainer: GeometryContainer::LineString(new_line(vec![
                     (72.0, 64.0),
