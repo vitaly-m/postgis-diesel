@@ -600,15 +600,24 @@ mod tests {
         assert_eq!(point.srid(), Some(4326));
 
         let point_z = AnyPoint::PointZ(PointZ::new(72.0, 64.0, 10.0, Some(4326)));
-        assert_eq!(point_z.geometry_type(), GeometryType::Point as u32 | Dimension::Z);
+        assert_eq!(
+            point_z.geometry_type(),
+            GeometryType::Point as u32 | Dimension::Z
+        );
         assert_eq!(point_z.srid(), Some(4326));
 
         let point_m = AnyPoint::PointM(PointM::new(72.0, 64.0, 11.0, Some(4326)));
-        assert_eq!(point_m.geometry_type(), GeometryType::Point as u32 | Dimension::M);
+        assert_eq!(
+            point_m.geometry_type(),
+            GeometryType::Point as u32 | Dimension::M
+        );
         assert_eq!(point_m.srid(), Some(4326));
 
         let point_zm = AnyPoint::PointZM(PointZM::new(72.0, 64.0, 10.0, 11.0, Some(4326)));
-        assert_eq!(point_zm.geometry_type(), GeometryType::Point as u32 | Dimension::ZM);
+        assert_eq!(
+            point_zm.geometry_type(),
+            GeometryType::Point as u32 | Dimension::ZM
+        );
         assert_eq!(point_zm.srid(), Some(4326));
     }
 }

@@ -119,7 +119,8 @@ mod test {
         assert_eq!(anypoint_m, decoded_anypoint);
 
         // Test 4D point
-        let anypoint_4d = crate::types::AnyPoint::PointZM(PointZM::new(1.0, 2.0, 3.0, 4.0, Some(4326)));
+        let anypoint_4d =
+            crate::types::AnyPoint::PointZM(PointZM::new(1.0, 2.0, 3.0, 4.0, Some(4326)));
         let mut buffer = Vec::new();
         anypoint_4d.write_to_sql(true, &mut buffer).unwrap();
         let decoded_anypoint = crate::types::AnyPoint::read_from_sql(&buffer).unwrap();

@@ -190,7 +190,8 @@ mod test {
         test_write_ewkb_header(&anypoint_m).unwrap();
 
         // Test 4D point
-        let anypoint_4d = crate::types::AnyPoint::PointZM(PointZM::new(1.0, 2.0, 3.0, 4.0, Some(4326)));
+        let anypoint_4d =
+            crate::types::AnyPoint::PointZM(PointZM::new(1.0, 2.0, 3.0, 4.0, Some(4326)));
         test_write_ewkb_header(&anypoint_4d).unwrap();
     }
 }

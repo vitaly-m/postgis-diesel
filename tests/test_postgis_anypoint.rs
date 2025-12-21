@@ -280,4 +280,3 @@ fn anypoint_geography_test() {
         }
     }
 }
-

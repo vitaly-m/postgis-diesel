@@ -6,8 +6,8 @@ extern crate diesel;
 
 use std::sync::Once;
 
-use diesel::SqliteConnection;
 use diesel::Connection;
+use diesel::SqliteConnection;
 use diesel::{QueryDsl, RunQueryDsl, TextExpressionMethods};
 
 use postgis_diesel::types::{AnyPoint, PointT};
@@ -62,7 +62,7 @@ fn establish_sqlite_connection() -> SqliteConnection {
 )",
         )
         .execute(&mut conn);
-        
+
         // Insert samples individually to avoid batch insert issues
         let sample_2d = NewGeometrySample {
             name: "point_2d".to_string(),
@@ -80,7 +80,7 @@ fn establish_sqlite_connection() -> SqliteConnection {
             name: "point_4d".to_string(),
             point: new_anypoint(72.0, 64.0, Some(10.0), Some(11.0)),
         };
-        
+
         diesel::insert_into(geom_accessor_functions::table)
             .values(&sample_2d)
             .execute(&mut conn)
@@ -113,50 +113,42 @@ fn point_test_sqlite() {
     // Verify each point type was stored correctly
     for sample in found_samples {
         match sample.name.as_str() {
-            "point_2d" => {
-                match sample.point {
-                    AnyPoint::Point(p) => {
-                        assert_eq!(p.x, 72.0);
-                        assert_eq!(p.y, 64.0);
-                        assert_eq!(p.srid, Some(4326));
-                    }
-                    _ => panic!("Expected Point variant"),
+            "point_2d" => match sample.point {
+                AnyPoint::Point(p) => {
+                    assert_eq!(p.x, 72.0);
+                    assert_eq!(p.y, 64.0);
+                    assert_eq!(p.srid, Some(4326));
                 }
-            }
-            "point_3d" => {
-                match sample.point {
-                    AnyPoint::PointZ(p) => {
-                        assert_eq!(p.x, 72.0);
-                        assert_eq!(p.y, 64.0);
-                        assert_eq!(p.z, 10.0);
-                        assert_eq!(p.srid, Some(4326));
-                    }
-                    _ => panic!("Expected PointZ variant"),
+                _ => panic!("Expected Point variant"),
+            },
+            "point_3d" => match sample.point {
+                AnyPoint::PointZ(p) => {
+                    assert_eq!(p.x, 72.0);
+                    assert_eq!(p.y, 64.0);
+                    assert_eq!(p.z, 10.0);
+                    assert_eq!(p.srid, Some(4326));
                 }
-            }
-            "point_m" => {
-                match sample.point {
-                    AnyPoint::PointM(p) => {
-                        assert_eq!(p.x, 72.0);
-                        assert_eq!(p.y, 64.0);
-                        assert_eq!(p.m, 11.0);
-                        assert_eq!(p.srid, Some(4326));
-                    }
-                    _ => panic!("Expected PointM variant"),
+                _ => panic!("Expected PointZ variant"),
+            },
+            "point_m" => match sample.point {
+                AnyPoint::PointM(p) => {
+                    assert_eq!(p.x, 72.0);
+                    assert_eq!(p.y, 64.0);
+                    assert_eq!(p.m, 11.0);
+                    assert_eq!(p.srid, Some(4326));
                 }
-            }
-            "point_4d" => {
-                match sample.point {
-                    AnyPoint::PointZM(p) => {
-                        assert_eq!(p.x, 72.0);
-                        assert_eq!(p.y, 64.0);
-                        assert_eq!(p.z, 10.0);
-                        assert_eq!(p.m, 11.0);
-                        assert_eq!(p.srid, Some(4326));
-                    }
-                    _ => panic!("Expected PointZM variant"),
+                _ => panic!("Expected PointM variant"),
+            },
+            "point_4d" => match sample.point {
+                AnyPoint::PointZM(p) => {
+                    assert_eq!(p.x, 72.0);
+                    assert_eq!(p.y, 64.0);
+                    assert_eq!(p.z, 10.0);
+                    assert_eq!(p.m, 11.0);
+                    assert_eq!(p.srid, Some(4326));
                 }
-            }
+                _ => panic!("Expected PointZM variant"),
+            },
             _ => panic!("Unexpected sample name: {}", sample.name),
         }
     }
