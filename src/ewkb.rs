@@ -174,4 +174,23 @@ mod test {
 
         test_write_ewkb_header(&multiline).unwrap();
     }
+
+    #[test]
+    fn test_read_write_ewkb_header_anypoint() {
+        // Test 2D point
+        let anypoint_2d = crate::types::AnyPoint::Point(Point::new(1.0, 2.0, Some(4326)));
+        test_write_ewkb_header(&anypoint_2d).unwrap();
+
+        // Test 3D point
+        let anypoint_3d = crate::types::AnyPoint::PointZ(PointZ::new(1.0, 2.0, 3.0, Some(4326)));
+        test_write_ewkb_header(&anypoint_3d).unwrap();
+
+        // Test M point
+        let anypoint_m = crate::types::AnyPoint::PointM(PointM::new(1.0, 2.0, 3.0, Some(4326)));
+        test_write_ewkb_header(&anypoint_m).unwrap();
+
+        // Test 4D point
+        let anypoint_4d = crate::types::AnyPoint::PointZM(PointZM::new(1.0, 2.0, 3.0, 4.0, Some(4326)));
+        test_write_ewkb_header(&anypoint_4d).unwrap();
+    }
 }

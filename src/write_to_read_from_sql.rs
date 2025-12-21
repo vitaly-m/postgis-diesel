@@ -96,6 +96,37 @@ mod test {
     }
 
     #[test]
+    fn test_encode_decode_anypoint() {
+        // Test 2D point
+        let anypoint_2d = crate::types::AnyPoint::Point(Point::new(1.0, 2.0, Some(4326)));
+        let mut buffer = Vec::new();
+        anypoint_2d.write_to_sql(true, &mut buffer).unwrap();
+        let decoded_anypoint = crate::types::AnyPoint::read_from_sql(&buffer).unwrap();
+        assert_eq!(anypoint_2d, decoded_anypoint);
+
+        // Test 3D point
+        let anypoint_3d = crate::types::AnyPoint::PointZ(PointZ::new(1.0, 2.0, 3.0, Some(4326)));
+        let mut buffer = Vec::new();
+        anypoint_3d.write_to_sql(true, &mut buffer).unwrap();
+        let decoded_anypoint = crate::types::AnyPoint::read_from_sql(&buffer).unwrap();
+        assert_eq!(anypoint_3d, decoded_anypoint);
+
+        // Test M point
+        let anypoint_m = crate::types::AnyPoint::PointM(PointM::new(1.0, 2.0, 3.0, Some(4326)));
+        let mut buffer = Vec::new();
+        anypoint_m.write_to_sql(true, &mut buffer).unwrap();
+        let decoded_anypoint = crate::types::AnyPoint::read_from_sql(&buffer).unwrap();
+        assert_eq!(anypoint_m, decoded_anypoint);
+
+        // Test 4D point
+        let anypoint_4d = crate::types::AnyPoint::PointZM(PointZM::new(1.0, 2.0, 3.0, 4.0, Some(4326)));
+        let mut buffer = Vec::new();
+        anypoint_4d.write_to_sql(true, &mut buffer).unwrap();
+        let decoded_anypoint = crate::types::AnyPoint::read_from_sql(&buffer).unwrap();
+        assert_eq!(anypoint_4d, decoded_anypoint);
+    }
+
+    #[test]
     fn test_encode_decode_linestring() {
         let point1 = Point::new(1.0, 2.0, None);
         let point2 = Point::new(3.0, 4.0, None);
