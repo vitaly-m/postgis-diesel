@@ -159,15 +159,15 @@ mod tests {
             GeometryContainer::Point(Point::new(0.0, 0.0, None)).dimension()
         );
         assert_eq!(
-            Dimension::Z as u32,
+            Dimension::Z,
             GeometryContainer::Point(PointZ::new(0.0, 0.0, 0.0, None)).dimension()
         );
         assert_eq!(
-            Dimension::M as u32,
+            Dimension::M,
             GeometryContainer::Point(PointM::new(0.0, 0.0, 0.0, None)).dimension()
         );
         assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             GeometryContainer::Point(PointZM::new(0.0, 0.0, 0.0, 0.0, None)).dimension()
         );
     }
@@ -185,7 +185,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::Z as u32,
+            Dimension::Z,
             GeometryContainer::LineString(
                 LineString::new(None)
                     .add_point(PointZ::new(0.0, 0.0, 0.0, None))
@@ -195,7 +195,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::M as u32,
+            Dimension::M,
             GeometryContainer::LineString(
                 LineString::new(None)
                     .add_point(PointM::new(0.0, 0.0, 0.0, None))
@@ -205,7 +205,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             GeometryContainer::LineString(
                 LineString::new(None)
                     .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
@@ -229,7 +229,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::Z as u32,
+            Dimension::Z,
             GeometryContainer::Polygon(
                 Polygon::new(None)
                     .add_point(PointZ::new(0.0, 0.0, 0.0, None))
@@ -239,7 +239,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::M as u32,
+            Dimension::M,
             GeometryContainer::Polygon(
                 Polygon::new(None)
                     .add_point(PointM::new(0.0, 0.0, 0.0, None))
@@ -249,7 +249,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             GeometryContainer::Polygon(
                 Polygon::new(None)
                     .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
@@ -272,7 +272,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::Z as u32,
+            Dimension::Z,
             GeometryContainer::MultiPoint(
                 MultiPoint::new(None)
                     .add_point(PointZ::new(0.0, 0.0, 0.0, None))
@@ -281,7 +281,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::M as u32,
+            Dimension::M,
             GeometryContainer::MultiPoint(
                 MultiPoint::new(None)
                     .add_point(PointM::new(0.0, 0.0, 0.0, None))
@@ -290,7 +290,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             GeometryContainer::MultiPoint(
                 MultiPoint::new(None)
                     .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
@@ -313,7 +313,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::Z as u32,
+            Dimension::Z,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
                     .add_point(PointZ::new(0.0, 0.0, 0.0, None))
@@ -323,7 +323,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::M as u32,
+            Dimension::M,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
                     .add_point(PointM::new(0.0, 0.0, 0.0, None))
@@ -333,7 +333,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             GeometryContainer::MultiLineString(
                 MultiLineString::new(None)
                     .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
@@ -357,7 +357,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::Z as u32,
+            Dimension::Z,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
                     .add_point(PointZ::new(0.0, 0.0, 0.0, None))
@@ -367,7 +367,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::M as u32,
+            Dimension::M,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
                     .add_point(PointM::new(0.0, 0.0, 0.0, None))
@@ -377,7 +377,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             GeometryContainer::MultiPolygon(
                 MultiPolygon::new(None)
                     .add_point(PointZM::new(0.0, 0.0, 0.0, 0.0, None))
@@ -400,7 +400,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::Z as u32,
+            Dimension::Z,
             GeometryContainer::GeometryCollection(
                 GeometryCollection::new(None)
                     .add_geometry(GeometryContainer::Point(PointZ::new(0.0, 0.0, 0.0, None)))
@@ -409,7 +409,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::M as u32,
+            Dimension::M,
             GeometryContainer::GeometryCollection(
                 GeometryCollection::new(None)
                     .add_geometry(GeometryContainer::Point(PointM::new(0.0, 0.0, 0.0, None)))
@@ -418,7 +418,7 @@ mod tests {
             .dimension()
         );
         assert_eq!(
-            Dimension::ZM as u32,
+            Dimension::ZM,
             GeometryContainer::GeometryCollection(
                 GeometryCollection::new(None)
                     .add_geometry(GeometryContainer::Point(PointZM::new(

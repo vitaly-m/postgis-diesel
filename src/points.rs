@@ -505,4 +505,119 @@ mod tests {
     fn test_new_point_zm_m_not_def_err() {
         PointZM::new_point(72.0, 64.0, None, Some(1.0), None).unwrap();
     }
+
+    // AnyPoint tests
+    #[test]
+    fn test_anypoint_new_point_variants() {
+        // Test Point variant (no z, no m)
+        let point = AnyPoint::new_point(72.0, 64.0, Some(4326), None, None).unwrap();
+        match point {
+            AnyPoint::Point(p) => {
+                assert_eq!(p.x, 72.0);
+                assert_eq!(p.y, 64.0);
+                assert_eq!(p.srid, Some(4326));
+            }
+            _ => panic!("Expected Point variant"),
+        }
+
+        // Test PointZ variant (with z, no m)
+        let point_z = AnyPoint::new_point(72.0, 64.0, Some(4326), Some(10.0), None).unwrap();
+        match point_z {
+            AnyPoint::PointZ(p) => {
+                assert_eq!(p.x, 72.0);
+                assert_eq!(p.y, 64.0);
+                assert_eq!(p.z, 10.0);
+                assert_eq!(p.srid, Some(4326));
+            }
+            _ => panic!("Expected PointZ variant"),
+        }
+
+        // Test PointM variant (no z, with m)
+        let point_m = AnyPoint::new_point(72.0, 64.0, Some(4326), None, Some(11.0)).unwrap();
+        match point_m {
+            AnyPoint::PointM(p) => {
+                assert_eq!(p.x, 72.0);
+                assert_eq!(p.y, 64.0);
+                assert_eq!(p.m, 11.0);
+                assert_eq!(p.srid, Some(4326));
+            }
+            _ => panic!("Expected PointM variant"),
+        }
+
+        // Test PointZM variant (with z and m)
+        let point_zm = AnyPoint::new_point(72.0, 64.0, Some(4326), Some(10.0), Some(11.0)).unwrap();
+        match point_zm {
+            AnyPoint::PointZM(p) => {
+                assert_eq!(p.x, 72.0);
+                assert_eq!(p.y, 64.0);
+                assert_eq!(p.z, 10.0);
+                assert_eq!(p.m, 11.0);
+                assert_eq!(p.srid, Some(4326));
+            }
+            _ => panic!("Expected PointZM variant"),
+        }
+    }
+
+    #[test]
+    fn test_anypoint_accessors() {
+        let point = AnyPoint::Point(Point::new(72.0, 64.0, Some(4326)));
+        assert_eq!(point.get_x(), 72.0);
+        assert_eq!(point.get_y(), 64.0);
+        assert_eq!(point.get_srid(), Some(4326));
+        assert_eq!(point.get_z(), None);
+        assert_eq!(point.get_m(), None);
+        assert_eq!(point.dimension(), Dimension::NONE);
+
+        let point_z = AnyPoint::PointZ(PointZ::new(72.0, 64.0, 10.0, Some(4326)));
+        assert_eq!(point_z.get_x(), 72.0);
+        assert_eq!(point_z.get_y(), 64.0);
+        assert_eq!(point_z.get_srid(), Some(4326));
+        assert_eq!(point_z.get_z(), Some(10.0));
+        assert_eq!(point_z.get_m(), None);
+        assert_eq!(point_z.dimension(), Dimension::Z);
+
+        let point_m = AnyPoint::PointM(PointM::new(72.0, 64.0, 11.0, Some(4326)));
+        assert_eq!(point_m.get_x(), 72.0);
+        assert_eq!(point_m.get_y(), 64.0);
+        assert_eq!(point_m.get_srid(), Some(4326));
+        assert_eq!(point_m.get_z(), None);
+        assert_eq!(point_m.get_m(), Some(11.0));
+        assert_eq!(point_m.dimension(), Dimension::M);
+
+        let point_zm = AnyPoint::PointZM(PointZM::new(72.0, 64.0, 10.0, 11.0, Some(4326)));
+        assert_eq!(point_zm.get_x(), 72.0);
+        assert_eq!(point_zm.get_y(), 64.0);
+        assert_eq!(point_zm.get_srid(), Some(4326));
+        assert_eq!(point_zm.get_z(), Some(10.0));
+        assert_eq!(point_zm.get_m(), Some(11.0));
+        assert_eq!(point_zm.dimension(), Dimension::ZM);
+    }
+
+    #[test]
+    fn test_anypoint_ewkb_serializable() {
+        let point = AnyPoint::Point(Point::new(72.0, 64.0, Some(4326)));
+        assert_eq!(point.geometry_type(), GeometryType::Point as u32);
+        assert_eq!(point.srid(), Some(4326));
+
+        let point_z = AnyPoint::PointZ(PointZ::new(72.0, 64.0, 10.0, Some(4326)));
+        assert_eq!(
+            point_z.geometry_type(),
+            GeometryType::Point as u32 | Dimension::Z
+        );
+        assert_eq!(point_z.srid(), Some(4326));
+
+        let point_m = AnyPoint::PointM(PointM::new(72.0, 64.0, 11.0, Some(4326)));
+        assert_eq!(
+            point_m.geometry_type(),
+            GeometryType::Point as u32 | Dimension::M
+        );
+        assert_eq!(point_m.srid(), Some(4326));
+
+        let point_zm = AnyPoint::PointZM(PointZM::new(72.0, 64.0, 10.0, 11.0, Some(4326)));
+        assert_eq!(
+            point_zm.geometry_type(),
+            GeometryType::Point as u32 | Dimension::ZM
+        );
+        assert_eq!(point_zm.srid(), Some(4326));
+    }
 }
