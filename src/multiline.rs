@@ -133,19 +133,15 @@ where
         Endianness: byteorder::ByteOrder,
     {
         let lines_n = reader.read_u32::<Endianness>().unwrap();
-        println!("read lines_n: {:?}", lines_n);
         let mut multiline = MultiLineString::with_capacity(header.srid, lines_n as usize);
         for _i in 0..lines_n {
-            println!("read line");
             // skip 1 byte for byte order and 4 bytes for point type
             reader.read_u8().unwrap();
             reader.read_u32::<Endianness>().unwrap();
             let points_n = reader.read_u32::<Endianness>().unwrap();
-            println!("read points_n: {:?}", points_n);
             multiline.add_line_with_cap(points_n as usize);
             for _p in 0..points_n {
                 let point = P::read_body::<Endianness, Reader>(header, reader)?;
-                println!("read point {:?}", point);
                 multiline.add_point(point).unwrap();
             }
         }
