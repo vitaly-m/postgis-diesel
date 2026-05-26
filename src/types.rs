@@ -462,7 +462,6 @@ mod tests {
 
             let schema_for_value = schema_for_value!(point);
             let schema_for_value_json = serde_json::to_string(&schema_for_value).unwrap();
-            println!("{}", schema_for_value_json);
             let expected_schema_for_value = r#"{"$schema":"http://json-schema.org/draft-07/schema#","title":"Point","examples":[{"x":72.0,"y":64.0}],"type":"object","properties":{"x":{"type":"number"},"y":{"type":"number"}}}"#;
             assert_eq!(expected_schema_for_value, schema_for_value_json);
         }
