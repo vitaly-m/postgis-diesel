@@ -10,11 +10,13 @@ const WGS84_SRID: Option<u32> = Some(4326);
 
 macro_rules! check_srid_wgs84 {
     ($x:ident) => {
-        if $x.srid.is_some() && $x.srid != WGS84_SRID {
-            return Err(ser::Error::custom(format!(
-                "Invalid SRID {}",
-                $x.srid.unwrap()
-            )));
+        if let Some(srid) = $x.srid {
+            if srid != 4326 {
+                return Err(ser::Error::custom(format!(
+                    "Invalid SRID {}",
+                    srid
+                )));
+            }
         }
     };
 }
